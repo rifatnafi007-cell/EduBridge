@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarCheck, Inbox, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
+import { ProfileCompletionCard } from "@/components/shared/profile-completion-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { RowsSkeleton } from "@/components/shared/loading-skeleton";
@@ -83,6 +84,8 @@ function TutorDashboard() {
           </Button>
         }
       />
+
+      <ProfileCompletionCard />
 
       <div className="grid gap-4 sm:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">

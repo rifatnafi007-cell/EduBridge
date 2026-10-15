@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Inbox } from "lucide-react";
+import { Inbox, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
@@ -106,11 +106,20 @@ function StudentOffers() {
                 <p className="text-sm text-muted-foreground">
                   Total <span className="font-semibold text-foreground">{formatTaka(offer.total_amount)}</span>
                 </p>
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/student/offer/$id" params={{ id: offer.id }}>
-                    View details
-                  </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                  {offer.status === "accepted" && (
+                    <Button asChild size="sm" className="gap-1 bg-amber-500 hover:bg-amber-600 text-white">
+                      <Link to="/student/offer/$id" params={{ id: offer.id }}>
+                        <Star className="h-3.5 w-3.5 fill-current" /> Rate & Review
+                      </Link>
+                    </Button>
+                  )}
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/student/offer/$id" params={{ id: offer.id }}>
+                      View details
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

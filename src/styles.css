@@ -156,3 +156,97 @@
     color: var(--color-foreground);
   }
 }
+
+/* Toast auto-dismiss linear progress bar */
+[data-sonner-toast][data-styled='true'] [data-content]::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: currentColor;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+[data-sonner-toast][data-styled='true'] [data-content]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: currentColor;
+  opacity: 0.65;
+  transform-origin: left;
+  animation: sonner-progress var(--toast-duration, 4000ms) linear forwards;
+  pointer-events: none;
+}
+
+[data-sonner-toast]:hover [data-content]::after,
+[data-sonner-toaster]:hover [data-sonner-toast] [data-content]::after {
+  animation-play-state: paused;
+}
+
+[data-sonner-toast][data-type='loading'] [data-content]::before,
+[data-sonner-toast][data-type='loading'] [data-content]::after,
+[data-sonner-toast][data-promise='true'] [data-content]::before,
+[data-sonner-toast][data-promise='true'] [data-content]::after {
+  display: none !important;
+}
+
+[dir='rtl'] [data-sonner-toast][data-styled='true'] [data-content]::after {
+  transform-origin: right;
+}
+
+@keyframes sonner-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Toast close button - vertically centered on the right side */
+[data-sonner-toast][data-styled='true'] [data-close-button] {
+  left: auto !important;
+  right: 12px !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+  border: none !important;
+  background: transparent !important;
+  color: currentColor !important;
+  opacity: 0.6 !important;
+  border-radius: 4px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: opacity 150ms ease, background-color 150ms ease !important;
+}
+
+[data-sonner-toast][data-styled='true']:hover [data-close-button]:hover,
+[data-sonner-toast][data-styled='true'] [data-close-button]:hover {
+  opacity: 1 !important;
+  background-color: color-mix(in srgb, currentColor 12%, transparent) !important;
+  border-color: transparent !important;
+}
+
+[data-sonner-toast][data-styled='true'] [data-content] {
+  padding-right: 28px;
+}
+
+[dir='rtl'] [data-sonner-toast][data-styled='true'] [data-close-button] {
+  left: 12px !important;
+  right: auto !important;
+}
+
+[dir='rtl'] [data-sonner-toast][data-styled='true'] [data-content] {
+  padding-right: 0;
+  padding-left: 28px;
+}
+

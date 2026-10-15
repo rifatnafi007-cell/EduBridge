@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarCheck, MessageSquareWarning, Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
+import { ProfileCompletionCard } from "@/components/shared/profile-completion-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
@@ -76,6 +77,8 @@ function StudentDashboard() {
           </Button>
         }
       />
+
+      <ProfileCompletionCard />
 
       <div className="grid gap-4 sm:grid-cols-3">
         {stats.map((s) => (

@@ -40,6 +40,7 @@ const NAV: Record<AppRole, NavItem[]> = {
     { label: "Users", to: "/admin/users" },
     { label: "Complaints", to: "/admin/complaints" },
     { label: "All Offers", to: "/admin/offers" },
+    { label: "Reviews", to: "/admin/reviews" },
   ],
 };
 
@@ -51,7 +52,12 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = role ? NAV[role] : [];
-  const profilePath = role === "tutor" ? "/tutor/profile" : role === "student" ? "/student/profile" : "/admin/dashboard";
+  const profilePath =
+    role === "tutor"
+      ? "/tutor/profile"
+      : role === "student"
+      ? "/student/profile"
+      : "/admin/profile";
 
   async function signOut() {
     await queryClient.cancelQueries();

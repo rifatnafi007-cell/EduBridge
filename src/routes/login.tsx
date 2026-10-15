@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth, homePathForRole } from "@/hooks/use-auth";
+import { useAuth, homePathForRole, isRecoverySession } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -24,14 +24,22 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { user, role, hasTutorProfile, loading } = useAuth();
+  const { user, session, role, hasTutorProfile, loading, isPasswordRecovery } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: homePathForRole(role, hasTutorProfile), replace: true });
-  }, [user, role, hasTutorProfile, loading, navigate]);
+    if (loading) return;
+    if (user) {
+      if (isPasswordRecovery || isRecoverySession(session?.access_token)) {
+        // Recovery sessions are only for password changes; sign out so user can log in normally
+        supabase.auth.signOut();
+        return;
+      }
+      navigate({ to: homePathForRole(role, hasTutorProfile), replace: true });
+    }
+  }, [user, session, role, hasTutorProfile, loading, isPasswordRecovery, navigate]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

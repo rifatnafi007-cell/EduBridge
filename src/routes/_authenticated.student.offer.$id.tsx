@@ -9,6 +9,7 @@ import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { EmptyState } from "@/components/shared/empty-state";
 import { RowsSkeleton } from "@/components/shared/loading-skeleton";
 import { UserAvatar } from "@/components/shared/user-avatar";
+import { RatingStars } from "@/components/shared/rating-stars";
 import { ReviewDialog } from "@/components/shared/review-dialog";
 import { ComplaintDialog } from "@/components/shared/complaint-dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,7 +50,7 @@ function StudentOfferDetail() {
     queryKey: ["offer-review", id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("reviews").select("id, rating").eq("offer_id", id).maybeSingle();
+      const { data, error } = await supabase.from("reviews").select("id, rating, comment, created_at").eq("offer_id", id).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -142,9 +143,21 @@ function StudentOfferDetail() {
             </Button>
           )}
           {offer.status === "accepted" && !reviewQuery.data && (
-            <Button onClick={() => setReviewOpen(true)}>
-              <Star className="mr-2 h-4 w-4" /> Leave a review
+            <Button onClick={() => setReviewOpen(true)} className="gap-1.5">
+              <Star className="h-4 w-4" /> Leave a review
             </Button>
+          )}
+          {offer.status === "accepted" && reviewQuery.data && (
+            <div className="flex flex-col gap-1 rounded-lg border border-border bg-accent/20 p-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">Your Review:</span>
+                <RatingStars value={reviewQuery.data.rating} size={15} />
+                <span className="text-xs font-bold text-foreground">{reviewQuery.data.rating} / 5</span>
+              </div>
+              {reviewQuery.data.comment && (
+                <p className="mt-1 text-xs text-muted-foreground italic">"{reviewQuery.data.comment}"</p>
+              )}
+            </div>
           )}
           {offer.tutor_profiles?.user_id && (
             <Button variant="ghost" className="text-destructive" onClick={() => setComplaintOpen(true)}>

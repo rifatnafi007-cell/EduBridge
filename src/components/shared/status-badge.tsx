@@ -8,6 +8,7 @@ const STYLES: Record<string, string> = {
   open: "bg-warning/15 text-warning-foreground border-warning/30",
   in_review: "bg-info/12 text-info border-info/30",
   resolved: "bg-primary/12 text-primary border-primary/30",
+  dismissed: "bg-muted/80 text-muted-foreground border-border",
 };
 
 const LABELS: Record<string, string> = {
