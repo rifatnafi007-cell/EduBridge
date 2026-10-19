@@ -15,6 +15,8 @@ export function ProfileForm() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [grade, setGrade] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -23,23 +25,45 @@ export function ProfileForm() {
     setFullName(profile.full_name ?? "");
     setPhone(profile.phone ?? "");
     setAddress(profile.address ?? "");
+    setInstitution(profile.institution ?? "");
+    setGrade(profile.grade ?? "");
   }, [profile]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: fullName.trim(), phone: phone.trim() || null, address: address.trim() || null })
-      .eq("id", user.id);
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+
+    try {
+      // 1. Update user_metadata in Supabase Auth (ensures instant persistence)
+      await supabase.auth.updateUser({
+        data: {
+          institution: institution.trim() || null,
+          grade: grade.trim() || null,
+        },
+      });
+
+      // 2. Update profiles table
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: fullName.trim(),
+          phone: phone.trim() || null,
+          address: address.trim() || null,
+        })
+        .eq("id", user.id);
+
+      setSaving(false);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      refresh();
+      toast.success("Profile updated successfully.");
+    } catch (err: any) {
+      setSaving(false);
+      toast.error(err.message || "Failed to update profile.");
     }
-    refresh();
-    toast.success("Profile updated.");
   }
 
   async function uploadAvatar(file: File) {
@@ -96,7 +120,30 @@ export function ProfileForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="address">Address / area</Label>
-        <Textarea id="address" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} />
+        <Textarea id="address" rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="e.g. House 12, Road 5, Dhanmondi, Dhaka" />
+        <p className="text-xs text-muted-foreground">Required for geographic matching and distance calculation.</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="institution">Current study institution or passed one</Label>
+        <Input
+          id="institution"
+          value={institution}
+          onChange={(e) => setInstitution(e.target.value)}
+          placeholder="e.g. University of Dhaka, Notre Dame College, Viqarunnisa Noon School, BUET"
+        />
+        <p className="text-xs text-muted-foreground">Required to verify academic background.</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="grade">Current grade / GPA / Academic result</Label>
+        <Input
+          id="grade"
+          value={grade}
+          onChange={(e) => setGrade(e.target.value)}
+          placeholder="e.g. Class 10 (GPA 5.00), HSC Candidate, BSc (CGPA 3.82)"
+        />
+        <p className="text-xs text-muted-foreground">Helps tutors evaluate your level and requirements.</p>
       </div>
 
       <Button type="submit" disabled={saving}>

@@ -20,6 +20,7 @@ import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authen
 import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated.student'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated.tutor'
 import { Route as ApiChatbotRouteImport } from './routes/api/chatbot'
+import { Route as ApiRecommendationInsightsRouteImport } from './routes/api/recommendation-insights'
 import { Route as AuthenticatedAdminComplaintsRouteImport } from './routes/_authenticated.admin.complaints'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated.admin.dashboard'
 import { Route as AuthenticatedAdminOffersRouteImport } from './routes/_authenticated.admin.offers'
@@ -30,6 +31,7 @@ import { Route as AuthenticatedStudentComplaintsRouteImport } from './routes/_au
 import { Route as AuthenticatedStudentDashboardRouteImport } from './routes/_authenticated.student.dashboard'
 import { Route as AuthenticatedStudentOffersRouteImport } from './routes/_authenticated.student.offers'
 import { Route as AuthenticatedStudentProfileRouteImport } from './routes/_authenticated.student.profile'
+import { Route as AuthenticatedStudentRecommendationsRouteImport } from './routes/_authenticated.student.recommendations'
 import { Route as AuthenticatedStudentReviewsRouteImport } from './routes/_authenticated.student.reviews'
 import { Route as AuthenticatedStudentSearchRouteImport } from './routes/_authenticated.student.search'
 import { Route as AuthenticatedTutorAvailabilityRouteImport } from './routes/_authenticated.tutor.availability'
@@ -98,6 +100,12 @@ const ApiChatbotRoute = ApiChatbotRouteImport.update({
   path: '/api/chatbot',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRecommendationInsightsRoute =
+  ApiRecommendationInsightsRouteImport.update({
+    id: '/api/recommendation-insights',
+    path: '/api/recommendation-insights',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAdminComplaintsRoute =
   AuthenticatedAdminComplaintsRouteImport.update({
     id: '/complaints',
@@ -155,6 +163,12 @@ const AuthenticatedStudentProfileRoute =
   AuthenticatedStudentProfileRouteImport.update({
     id: '/profile',
     path: '/profile',
+    getParentRoute: () => AuthenticatedStudentRoute,
+  } as any)
+const AuthenticatedStudentRecommendationsRoute =
+  AuthenticatedStudentRecommendationsRouteImport.update({
+    id: '/recommendations',
+    path: '/recommendations',
     getParentRoute: () => AuthenticatedStudentRoute,
   } as any)
 const AuthenticatedStudentReviewsRoute =
@@ -241,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/student': typeof AuthenticatedStudentRouteWithChildren
   '/tutor': typeof AuthenticatedTutorRouteWithChildren
   '/api/chatbot': typeof ApiChatbotRoute
+  '/api/recommendation-insights': typeof ApiRecommendationInsightsRoute
   '/admin/complaints': typeof AuthenticatedAdminComplaintsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/offers': typeof AuthenticatedAdminOffersRoute
@@ -251,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/student/dashboard': typeof AuthenticatedStudentDashboardRoute
   '/student/offers': typeof AuthenticatedStudentOffersRoute
   '/student/profile': typeof AuthenticatedStudentProfileRoute
+  '/student/recommendations': typeof AuthenticatedStudentRecommendationsRoute
   '/student/reviews': typeof AuthenticatedStudentReviewsRoute
   '/student/search': typeof AuthenticatedStudentSearchRoute
   '/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
@@ -275,6 +291,7 @@ export interface FileRoutesByTo {
   '/student': typeof AuthenticatedStudentRouteWithChildren
   '/tutor': typeof AuthenticatedTutorRouteWithChildren
   '/api/chatbot': typeof ApiChatbotRoute
+  '/api/recommendation-insights': typeof ApiRecommendationInsightsRoute
   '/admin/complaints': typeof AuthenticatedAdminComplaintsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/offers': typeof AuthenticatedAdminOffersRoute
@@ -285,6 +302,7 @@ export interface FileRoutesByTo {
   '/student/dashboard': typeof AuthenticatedStudentDashboardRoute
   '/student/offers': typeof AuthenticatedStudentOffersRoute
   '/student/profile': typeof AuthenticatedStudentProfileRoute
+  '/student/recommendations': typeof AuthenticatedStudentRecommendationsRoute
   '/student/reviews': typeof AuthenticatedStudentReviewsRoute
   '/student/search': typeof AuthenticatedStudentSearchRoute
   '/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
@@ -311,6 +329,7 @@ export interface FileRoutesById {
   '/_authenticated/student': typeof AuthenticatedStudentRouteWithChildren
   '/_authenticated/tutor': typeof AuthenticatedTutorRouteWithChildren
   '/api/chatbot': typeof ApiChatbotRoute
+  '/api/recommendation-insights': typeof ApiRecommendationInsightsRoute
   '/_authenticated/admin/complaints': typeof AuthenticatedAdminComplaintsRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/offers': typeof AuthenticatedAdminOffersRoute
@@ -321,6 +340,7 @@ export interface FileRoutesById {
   '/_authenticated/student/dashboard': typeof AuthenticatedStudentDashboardRoute
   '/_authenticated/student/offers': typeof AuthenticatedStudentOffersRoute
   '/_authenticated/student/profile': typeof AuthenticatedStudentProfileRoute
+  '/_authenticated/student/recommendations': typeof AuthenticatedStudentRecommendationsRoute
   '/_authenticated/student/reviews': typeof AuthenticatedStudentReviewsRoute
   '/_authenticated/student/search': typeof AuthenticatedStudentSearchRoute
   '/_authenticated/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
@@ -347,6 +367,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/tutor'
     | '/api/chatbot'
+    | '/api/recommendation-insights'
     | '/admin/complaints'
     | '/admin/dashboard'
     | '/admin/offers'
@@ -357,6 +378,7 @@ export interface FileRouteTypes {
     | '/student/dashboard'
     | '/student/offers'
     | '/student/profile'
+    | '/student/recommendations'
     | '/student/reviews'
     | '/student/search'
     | '/tutor/availability'
@@ -381,6 +403,7 @@ export interface FileRouteTypes {
     | '/student'
     | '/tutor'
     | '/api/chatbot'
+    | '/api/recommendation-insights'
     | '/admin/complaints'
     | '/admin/dashboard'
     | '/admin/offers'
@@ -391,6 +414,7 @@ export interface FileRouteTypes {
     | '/student/dashboard'
     | '/student/offers'
     | '/student/profile'
+    | '/student/recommendations'
     | '/student/reviews'
     | '/student/search'
     | '/tutor/availability'
@@ -416,6 +440,7 @@ export interface FileRouteTypes {
     | '/_authenticated/student'
     | '/_authenticated/tutor'
     | '/api/chatbot'
+    | '/api/recommendation-insights'
     | '/_authenticated/admin/complaints'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/offers'
@@ -426,6 +451,7 @@ export interface FileRouteTypes {
     | '/_authenticated/student/dashboard'
     | '/_authenticated/student/offers'
     | '/_authenticated/student/profile'
+    | '/_authenticated/student/recommendations'
     | '/_authenticated/student/reviews'
     | '/_authenticated/student/search'
     | '/_authenticated/tutor/availability'
@@ -448,6 +474,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SelectRoleRoute: typeof SelectRoleRoute
   ApiChatbotRoute: typeof ApiChatbotRoute
+  ApiRecommendationInsightsRoute: typeof ApiRecommendationInsightsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -529,6 +556,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatbotRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/recommendation-insights': {
+      id: '/api/recommendation-insights'
+      path: '/api/recommendation-insights'
+      fullPath: '/api/recommendation-insights'
+      preLoaderRoute: typeof ApiRecommendationInsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/complaints': {
       id: '/_authenticated/admin/complaints'
       path: '/complaints'
@@ -597,6 +631,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/student/profile'
       preLoaderRoute: typeof AuthenticatedStudentProfileRouteImport
+      parentRoute: typeof AuthenticatedStudentRoute
+    }
+    '/_authenticated/student/recommendations': {
+      id: '/_authenticated/student/recommendations'
+      path: '/recommendations'
+      fullPath: '/student/recommendations'
+      preLoaderRoute: typeof AuthenticatedStudentRecommendationsRouteImport
       parentRoute: typeof AuthenticatedStudentRoute
     }
     '/_authenticated/student/reviews': {
@@ -712,6 +753,7 @@ interface AuthenticatedStudentRouteChildren {
   AuthenticatedStudentDashboardRoute: typeof AuthenticatedStudentDashboardRoute
   AuthenticatedStudentOffersRoute: typeof AuthenticatedStudentOffersRoute
   AuthenticatedStudentProfileRoute: typeof AuthenticatedStudentProfileRoute
+  AuthenticatedStudentRecommendationsRoute: typeof AuthenticatedStudentRecommendationsRoute
   AuthenticatedStudentReviewsRoute: typeof AuthenticatedStudentReviewsRoute
   AuthenticatedStudentSearchRoute: typeof AuthenticatedStudentSearchRoute
   AuthenticatedStudentOfferIdRoute: typeof AuthenticatedStudentOfferIdRoute
@@ -723,6 +765,8 @@ const AuthenticatedStudentRouteChildren: AuthenticatedStudentRouteChildren = {
   AuthenticatedStudentDashboardRoute: AuthenticatedStudentDashboardRoute,
   AuthenticatedStudentOffersRoute: AuthenticatedStudentOffersRoute,
   AuthenticatedStudentProfileRoute: AuthenticatedStudentProfileRoute,
+  AuthenticatedStudentRecommendationsRoute:
+    AuthenticatedStudentRecommendationsRoute,
   AuthenticatedStudentReviewsRoute: AuthenticatedStudentReviewsRoute,
   AuthenticatedStudentSearchRoute: AuthenticatedStudentSearchRoute,
   AuthenticatedStudentOfferIdRoute: AuthenticatedStudentOfferIdRoute,
@@ -783,6 +827,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SelectRoleRoute: SelectRoleRoute,
   ApiChatbotRoute: ApiChatbotRoute,
+  ApiRecommendationInsightsRoute: ApiRecommendationInsightsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

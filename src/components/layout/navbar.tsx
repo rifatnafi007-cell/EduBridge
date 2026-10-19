@@ -23,6 +23,7 @@ type NavItem = { label: string; to: string };
 const NAV: Record<AppRole, NavItem[]> = {
   student: [
     { label: "Home", to: "/student/dashboard" },
+    { label: "AI Recommendations", to: "/student/recommendations" },
     { label: "Find Tutors", to: "/student/search" },
     { label: "My Offers", to: "/student/offers" },
     { label: "My Reviews", to: "/student/reviews" },

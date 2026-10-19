@@ -220,7 +220,9 @@ export function AdminOffers() {
                       />
                       <div>
                         <p className="font-medium text-foreground">{o.profiles?.full_name ?? "—"}</p>
-                        <p className="font-mono text-[10px] text-muted-foreground">{o.id.slice(0, 8)}...</p>
+                        <span className="inline-flex items-center rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                          Offer #{o.id.slice(0, 8)}
+                        </span>
                       </div>
                     </div>
                   </TableCell>

@@ -12,6 +12,8 @@ export type Profile = {
   avatar_url: string | null;
   phone: string | null;
   address: string | null;
+  institution?: string | null;
+  grade?: string | null;
   is_suspended?: boolean;
 };
 
@@ -105,6 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile = (fallback.data as Profile | null) ?? null;
       } else {
         profile = (profileRes.data as Profile | null) ?? null;
+      }
+
+      if (profile) {
+        const { data: authUser } = await supabase.auth.getUser();
+        const meta = (authUser?.user?.user_metadata || session?.user?.user_metadata || {}) as Record<string, any>;
+        profile = {
+          ...profile,
+          institution: meta["institution"] || (profile as any)["institution"] || null,
+          grade: meta["grade"] || (profile as any)["grade"] || null,
+        };
       }
 
       return {

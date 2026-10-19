@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ProfileForm } from "@/components/shared/profile-form";
 import { TutorProfileForm } from "@/components/shared/tutor-profile-form";
 import { ProfileCompletionBanner } from "@/components/shared/profile-completion-card";
+import { ProfileGateCard } from "@/components/shared/profile-gate-card";
 
 export const Route = createFileRoute("/_authenticated/tutor/profile")({
   head: () => ({
@@ -20,6 +21,7 @@ function TutorProfilePage() {
   return (
     <div className="space-y-10">
       <ProfileCompletionBanner />
+      <ProfileGateCard />
       <div>
         <PageHeader title="Personal details" subtitle="Shown to students when they contact you." />
         <ProfileForm />

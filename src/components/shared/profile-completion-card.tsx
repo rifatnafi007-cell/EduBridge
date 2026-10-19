@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, Circle, PartyPopper, UserCircle } from "lucide-react";
+import { CheckCircle2, Circle, PartyPopper, UserCircle, Lock, MapPin } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * Hides automatically when profile is 100% complete.
  */
 export function ProfileCompletionCard() {
-  const { percentage, items, incompleteItems, loading } = useProfileCompletion();
+  const { percentage, items, incompleteItems, isLocationSearchUnlocked, loading } = useProfileCompletion();
 
   if (loading) return null;
   if (percentage === 100) return null;
@@ -48,8 +48,8 @@ export function ProfileCompletionCard() {
       {/* Checklist */}
       <ul className="space-y-2">
         {items.map((item) => (
-          <li key={item.label} className="flex items-center justify-between gap-2 text-sm">
-            <div className="flex items-center gap-2">
+          <li key={item.label} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div className="flex items-center gap-2 flex-wrap">
               {item.completed ? (
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
               ) : (
@@ -58,6 +58,11 @@ export function ProfileCompletionCard() {
               <span className={cn(item.completed ? "text-muted-foreground line-through" : "text-foreground")}>
                 {item.label}
               </span>
+              {item.isRequiredForLocation && !item.completed && (
+                <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                  Required for location search
+                </span>
+              )}
             </div>
             {!item.completed && (
               <Link
@@ -71,8 +76,17 @@ export function ProfileCompletionCard() {
         ))}
       </ul>
 
+      {!isLocationSearchUnlocked && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+          <Lock className="h-4 w-4 shrink-0 text-amber-600" />
+          <span>
+            <strong>Location-Based Tutor Matching is locked.</strong> Fill in your mobile number, address, institution, and grades to unlock nearest-distance home tuition.
+          </span>
+        </div>
+      )}
+
       {incompleteItems.length > 0 && (
-        <p className="mt-4 text-xs text-muted-foreground">
+        <p className="mt-3 text-xs text-muted-foreground">
           {incompleteItems.length} item{incompleteItems.length > 1 ? "s" : ""} remaining to complete
           your profile.
         </p>

@@ -1,17 +1,25 @@
+import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, MessageSquareWarning, Search, Star } from "lucide-react";
+import { CalendarCheck, MessageSquareWarning, Search, Star, Sparkles, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProfileCompletionCard } from "@/components/shared/profile-completion-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
-import { TutorCard, type TutorListItem } from "@/components/shared/tutor-card";
+import { TutorCard } from "@/components/shared/tutor-card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { OFFER_SELECT, type OfferRow } from "@/lib/selects";
 import { formatDate, formatTaka } from "@/lib/edubridge";
+import {
+  DEFAULT_PREFERENCES,
+  rankTutorsByPreferences,
+  type StudentPreferences,
+  type TutorWithSlots,
+} from "@/lib/recommendation";
 
 export const Route = createFileRoute("/_authenticated/student/dashboard")({
   head: () => ({
@@ -42,20 +50,40 @@ function StudentDashboard() {
   });
 
   const tutorsQuery = useQuery({
-    queryKey: ["recommended-tutors"],
+    queryKey: ["recommended-tutors-with-slots"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tutor_profiles")
-        .select(
-          "id, user_id, bio, subjects, levels, hourly_rate, avg_rating, total_reviews, experience_years, profiles(full_name, avatar_url)",
-        )
-        .eq("is_active", true)
-        .order("avg_rating", { ascending: false })
-        .limit(3);
+        .select(`
+          id, user_id, bio, qualifications, subjects, levels, hourly_rate, avg_rating, total_reviews, experience_years,
+          profiles(full_name, avatar_url, address),
+          schedule_slots(id, day_of_week, start_time, end_time, is_booked)
+        `)
+        .eq("is_active", true);
       if (error) throw error;
-      return (data ?? []) as unknown as TutorListItem[];
+      return (data ?? []) as unknown as TutorWithSlots[];
     },
   });
+
+  const preferences: StudentPreferences = useMemo(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("edubridge_student_recommendation_prefs");
+        if (saved) return JSON.parse(saved) as StudentPreferences;
+      } catch {
+        // Ignore JSON parse error
+      }
+    }
+    return {
+      ...DEFAULT_PREFERENCES,
+      location: profile?.address || "",
+    };
+  }, [profile?.address]);
+
+  const recommendedMatches = useMemo(() => {
+    if (!tutorsQuery.data) return [];
+    return rankTutorsByPreferences(tutorsQuery.data, preferences).slice(0, 3);
+  }, [tutorsQuery.data, preferences]);
 
   const offers = offersQuery.data ?? [];
   const stats = [
@@ -138,13 +166,36 @@ function StudentDashboard() {
       </section>
 
       <section className="mt-10">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">Recommended tutors</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-foreground">AI Recommended Tutors</h2>
+            <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary text-xs gap-1 py-0.5 px-2 font-medium">
+              <Sparkles className="h-3 w-3" /> Personalized
+            </Badge>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/student/recommendations">
+              <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" /> Tune Preferences
+            </Link>
+          </Button>
+        </div>
+
         {tutorsQuery.isLoading ? (
           <LoadingSkeleton count={3} />
+        ) : recommendedMatches.length === 0 ? (
+          <EmptyState
+            title="No tutors found"
+            description="Browse all verified tutors to find the right instructor for your lessons."
+            action={
+              <Button asChild>
+                <Link to="/student/search">Search Tutors</Link>
+              </Button>
+            }
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {(tutorsQuery.data ?? []).map((t) => (
-              <TutorCard key={t.id} tutor={t} />
+            {recommendedMatches.map((m) => (
+              <TutorCard key={m.tutor.id} tutor={m.tutor} matchScore={m.match.overallScore} />
             ))}
           </div>
         )}
