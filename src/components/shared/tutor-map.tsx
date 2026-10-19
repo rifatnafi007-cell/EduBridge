@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { Link } from "@tanstack/react-router";
 import { formatTaka } from "@/lib/edubridge";
 import { formatDistance, type Coordinates } from "@/lib/geo";
+import { cn } from "@/lib/utils";
 
 export interface MapTutor {
   id: string;
@@ -223,8 +224,8 @@ export function TutorMap({
   }, [tutors, userLocation, radiusKm, selectedTutorId, onSelectTutor]);
 
   return (
-    <div className={className}>
-      <div ref={mapContainerRef} className="h-full w-full" />
+    <div className={cn("relative z-0 isolate overflow-hidden rounded-2xl border border-border shadow-sm", className)}>
+      <div ref={mapContainerRef} className="h-full w-full relative z-0" />
     </div>
   );
 }

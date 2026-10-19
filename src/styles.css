@@ -250,3 +250,46 @@
   padding-left: 28px;
 }
 
+/* Leaflet map containment & stacking context fixes */
+.leaflet-container {
+  z-index: 0 !important;
+  font-family: inherit !important;
+}
+
+.leaflet-pane {
+  z-index: 10 !important;
+}
+
+.leaflet-tile-pane {
+  z-index: 10 !important;
+}
+
+.leaflet-overlay-pane {
+  z-index: 20 !important;
+}
+
+.leaflet-shadow-pane {
+  z-index: 25 !important;
+}
+
+.leaflet-marker-pane {
+  z-index: 30 !important;
+}
+
+.leaflet-tooltip-pane {
+  z-index: 35 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 40 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 25 !important;
+}
+
+.leaflet-control {
+  z-index: 25 !important;
+}
+

@@ -364,7 +364,7 @@ export function ChatWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-4 z-50 flex h-[540px] w-[min(25rem,calc(100vw-2rem))] flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-24 right-4 z-[100] flex h-[540px] w-[min(25rem,calc(100vw-2rem))] flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-4">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-3">
             <div className="flex items-center gap-2.5">
@@ -513,7 +513,7 @@ export function ChatWidget() {
       <Button
         onClick={() => setOpen((prev) => !prev)}
         size="icon"
-        className="fixed bottom-6 right-4 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-primary/25 transition-all hover:scale-105 duration-200 [&_svg]:!size-7.5"
+        className="fixed bottom-6 right-4 z-[100] h-14 w-14 rounded-full shadow-lg hover:shadow-primary/25 transition-all hover:scale-105 duration-200 [&_svg]:!size-7.5"
         aria-label="Open AI assistant"
       >
         {open ? (
