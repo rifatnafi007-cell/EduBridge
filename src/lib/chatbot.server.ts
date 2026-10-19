@@ -248,20 +248,31 @@ function generateFallbackResponse(
 }
 
 function getGeminiApiKey(): string | undefined {
-  const envKey = process.env["GEMINI_API_KEY"] || process.env["VITE_GEMINI_API_KEY"];
-  if (envKey && envKey.trim()) return envKey.trim();
+  const g = globalThis as any;
+  const envKey =
+    process.env["GEMINI_API_KEY"] ||
+    process.env["VITE_GEMINI_API_KEY"] ||
+    g?.GEMINI_API_KEY ||
+    g?.VITE_GEMINI_API_KEY ||
+    g?.env?.GEMINI_API_KEY ||
+    g?.env?.VITE_GEMINI_API_KEY ||
+    g?.__env__?.GEMINI_API_KEY;
+
+  if (envKey && typeof envKey === "string" && envKey.trim()) return envKey.trim();
 
   try {
-    const envPath = path.resolve(process.cwd(), ".env");
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, "utf-8");
-      const match = content.match(/GEMINI_API_KEY=["']?([^"'\r\n]+)["']?/);
-      if (match && match[1]) {
-        return match[1].trim();
+    for (const fileName of [".env.local", ".env"]) {
+      const envPath = path.resolve(process.cwd(), fileName);
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, "utf-8");
+        const match = content.match(/GEMINI_API_KEY=["']?([^"'\r\n]+)["']?/);
+        if (match && match[1] && match[1].trim()) {
+          return match[1].trim();
+        }
       }
     }
   } catch {
-    // Ignore file read error
+    // Ignore file read error on serverless edge runtimes
   }
   return undefined;
 }
