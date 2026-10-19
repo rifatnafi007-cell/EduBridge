@@ -43,7 +43,12 @@ function cleanUrlAndLabel(rawLabel: string, rawUrl: string) {
   url = url.replace(/[)\]]+$/, "").trim();
   label = label.replace(/[)\]]+$/, "").trim();
 
-  // Strip domain/localhost (e.g., http://localhost:8080/student/... -> /student/...)
+  // Preserve external URLs (e.g. https://aistudio.google.com)
+  if (/^https?:\/\/(?!localhost|127\.0\.0\.1)/i.test(url) && !url.includes("edubridge")) {
+    return { label, url };
+  }
+
+  // Strip domain/localhost for internal app routes (e.g., http://localhost:8080/student/... -> /student/...)
   url = url.replace(/^https?:\/\/[^/]+/i, "");
   if (!url.startsWith("/")) {
     url = "/" + url;
