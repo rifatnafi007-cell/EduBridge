@@ -39,23 +39,45 @@ function cleanUrlAndLabel(rawLabel: string, rawUrl: string) {
   let url = rawUrl.trim();
   let label = rawLabel.trim();
 
+  // If url contains nested markdown e.g. [View Tutor Profile](/student/tutor/...)
+  const innerUrlMatch = url.match(/\(([^)]+)\)/);
+  if (innerUrlMatch && innerUrlMatch[1]) {
+    url = innerUrlMatch[1].trim();
+  }
+
+  // Strip nested brackets from label e.g. [Browse All Tutors] -> Browse All Tutors
+  label = label.replace(/^\[+|\]+$/g, "").trim();
+
   // Strip trailing stray parentheses or brackets e.g. /student/tutor/123)
   url = url.replace(/[)\]]+$/, "").trim();
   label = label.replace(/[)\]]+$/, "").trim();
 
+  // Decode URI component if percent-encoded paths exist
+  try {
+    url = decodeURIComponent(url);
+  } catch {
+    // Keep raw url
+  }
+
+  // Extract student paths if wrapped with domains
+  const studentPathMatch = url.match(/(\/student\/[a-zA-Z0-9_\-\/]+)/);
+  if (studentPathMatch && studentPathMatch[1]) {
+    url = studentPathMatch[1];
+  }
+
   // Preserve external URLs (e.g. https://aistudio.google.com)
-  if (/^https?:\/\/(?!localhost|127\.0\.0\.1)/i.test(url) && !url.includes("edubridge")) {
+  if (/^https?:\/\/(?!localhost|127\.0\.0\.1)/i.test(url) && !url.includes("edubridge") && !url.includes("pages.dev")) {
     return { label, url };
   }
 
-  // Strip domain/localhost for internal app routes (e.g., http://localhost:8080/student/... -> /student/...)
+  // Strip domain/localhost for internal app routes (e.g., https://...pages.dev/student/... -> /student/...)
   url = url.replace(/^https?:\/\/[^/]+/i, "");
   if (!url.startsWith("/")) {
     url = "/" + url;
   }
 
   // Sanitize awkward raw technical paths displayed as label
-  if (label.startsWith("/") || label.startsWith("http") || label.includes("localhost")) {
+  if (label.startsWith("/") || label.startsWith("http") || label.includes("localhost") || label.includes("pages.dev")) {
     if (url.includes("/student/search")) {
       label = "Browse All Tutors";
     } else if (url.includes("/student/tutor/")) {
@@ -71,14 +93,30 @@ function cleanUrlAndLabel(rawLabel: string, rawUrl: string) {
 }
 
 function renderInline(text: string) {
+  // 1. Remove any unparsed SUGGESTIONS tag that may have been cut off or unparsed
+  let processedText = text.replace(/SUGGESTIONS:[\s\S]*$/i, "").trim();
+
+  // 2. Fix accidental nested markdown links:
+  // e.g. [Farhana Yeasmin]([View Tutor Profile](/student/tutor/123)) -> [Farhana Yeasmin](/student/tutor/123)
+  processedText = processedText.replace(
+    /\[([^\]]+)\]\(\[[^\]]*\]\(([^)]+)\)\)/g,
+    "[$1]($2)",
+  );
+
+  // 3. Fix pages.dev domain prefixed markdown links
+  processedText = processedText.replace(
+    /\[([^\]]+)\]\(https?:\/\/[^/]*pages\.dev(\/student\/[^)]+)\)/gi,
+    "[$1]($2)",
+  );
+
   const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = regex.exec(processedText)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
+      parts.push(processedText.slice(lastIndex, match.index));
     }
 
     if (match[1] && match[2]) {

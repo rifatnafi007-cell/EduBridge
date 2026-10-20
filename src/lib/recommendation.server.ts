@@ -16,7 +16,11 @@ export interface AIRecommendationResponse {
   prefilledOfferMessage: string;
 }
 
-function getGeminiApiKey(): string | undefined {
+function getGeminiApiKey(customApiKey?: string): string | undefined {
+  if (customApiKey && typeof customApiKey === "string" && customApiKey.trim()) {
+    return customApiKey.trim();
+  }
+
   const g = globalThis as any;
   const envKey =
     process.env["GEMINI_API_KEY"] ||
@@ -25,7 +29,8 @@ function getGeminiApiKey(): string | undefined {
     g?.VITE_GEMINI_API_KEY ||
     g?.env?.GEMINI_API_KEY ||
     g?.env?.VITE_GEMINI_API_KEY ||
-    g?.__env__?.GEMINI_API_KEY;
+    g?.__env__?.GEMINI_API_KEY ||
+    g?.__cf_env__?.GEMINI_API_KEY;
 
   if (envKey && typeof envKey === "string" && envKey.trim()) return envKey.trim();
 
@@ -117,11 +122,12 @@ function generateFallbackInsights(
 export async function generateAIRecommendationInsights(
   prefs: StudentPreferences,
   topMatches: ScoredTutor[],
+  customApiKey?: string,
 ): Promise<AIRecommendationResponse> {
   const fallback = generateFallbackInsights(prefs, topMatches);
   if (topMatches.length === 0) return fallback;
 
-  const apiKey = getGeminiApiKey();
+  const apiKey = getGeminiApiKey(customApiKey);
   if (!apiKey || apiKey === "your-gemini-api-key-here") {
     return fallback;
   }
@@ -163,29 +169,46 @@ Analyze this student's exact academic profile and return a STRICT JSON object wi
 DO NOT include markdown code fences or backticks. Return RAW JSON ONLY.`;
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    const modelsToTry = [
+      "gemini-3.8-flash",
+      "gemini-flash-latest",
+      "gemini-flash-lite-latest",
+      "gemini-2.5-flash-lite",
+    ];
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`;
+    let response: Response | null = null;
+    for (const model of modelsToTry) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 800,
-          responseMimeType: "application/json",
-        },
-      }),
-    });
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 800,
+              responseMimeType: "application/json",
+            },
+          }),
+        });
+        clearTimeout(timeoutId);
 
-    clearTimeout(timeoutId);
+        if (res.ok) {
+          response = res;
+          break;
+        }
+      } catch (err) {
+        console.warn(`[AI Recommendations] Model ${model} failed:`, err);
+      }
+    }
 
-    if (!response.ok) {
-      console.warn("[AI Recommendations] Gemini API returned error:", response.status);
+    if (!response || !response.ok) {
+      console.warn("[AI Recommendations] All Gemini models returned non-ok, using fallback");
       return fallback;
     }
 

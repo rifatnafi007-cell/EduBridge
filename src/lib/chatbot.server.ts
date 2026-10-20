@@ -247,7 +247,11 @@ function generateFallbackResponse(
   };
 }
 
-function getGeminiApiKey(): string | undefined {
+function getGeminiApiKey(customApiKey?: string): string | undefined {
+  if (customApiKey && typeof customApiKey === "string" && customApiKey.trim()) {
+    return customApiKey.trim();
+  }
+
   const g = globalThis as any;
   const envKey =
     process.env["GEMINI_API_KEY"] ||
@@ -256,7 +260,8 @@ function getGeminiApiKey(): string | undefined {
     g?.VITE_GEMINI_API_KEY ||
     g?.env?.GEMINI_API_KEY ||
     g?.env?.VITE_GEMINI_API_KEY ||
-    g?.__env__?.GEMINI_API_KEY;
+    g?.__env__?.GEMINI_API_KEY ||
+    g?.__cf_env__?.GEMINI_API_KEY;
 
   if (envKey && typeof envKey === "string" && envKey.trim()) return envKey.trim();
 
@@ -283,6 +288,7 @@ function getGeminiApiKey(): string | undefined {
 export async function handleChatbotRequest(
   message: string,
   history: ChatHistoryItem[] = [],
+  customApiKey?: string,
 ): Promise<ChatbotResponse> {
   // 1. Instant fast-path for simple greetings & "who are you" (0 ms)
   const fastGreeting = checkFastPathGreeting(message);
@@ -290,7 +296,7 @@ export async function handleChatbotRequest(
     return fastGreeting;
   }
 
-  const apiKey = getGeminiApiKey();
+  const apiKey = getGeminiApiKey(customApiKey);
 
   // 2. Fetch live tutor database context (cached in memory)
   const tutors = await fetchTutorsContext();
@@ -326,9 +332,11 @@ ${tutorsSummary}
 Guidelines for Responses:
 - Language Matching: If the user asks in Bengali or Banglish (e.g., "Math er valo kon teacher ache"), reply warmly in natural, polite Bengali. If they ask in English, reply in English.
 - Links & URLs:
-  * When recommending a tutor, ALWAYS format their profile link with a friendly label: [View <Name>'s Profile](/student/tutor/<Tutor_ID>) or [<Name> - View Profile & Book](/student/tutor/<Tutor_ID>).
-  * When referring to search, format as: [Browse All Tutors](/student/search).
-  * NEVER write raw URLs, domain names (like localhost or http://...), or raw path strings (like "/student/search" or UUIDs) as visible text. Always use clean human-readable titles!
+  * When recommending a tutor, format their profile link as: [View <Name>'s Profile](/student/tutor/<Tutor_ID>)
+  * When referring to search, format as: [Browse All Tutors](/student/search)
+  * When referring to offers, format as: [My Offers](/student/offers)
+  * NEVER nest markdown links (e.g., NEVER write [Label]([Inner](url))). ALWAYS use clean [Label](url) with relative paths starting with '/'.
+  * NEVER include domain names (like localhost, edubridge.com, or https://...pages.dev) in links or text.
 - Keep your answers concise, structured (bullet points), polite, and educational.
 - Do not make up fake tutors not present in the database.
 - At the very end of your response, on a new line, always provide 3 relevant follow-up questions formatted exactly as:
@@ -365,35 +373,43 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       contents,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 500,
+        maxOutputTokens: 1200,
       },
     };
 
-    // 5. Try ultra-fast gemini-flash-lite-latest first, fallback to gemini-flash-latest
-    let res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      },
-    );
+    // 5. Try Gemini models in order: gemini-3.8-flash, gemini-flash-latest, gemini-flash-lite-latest, gemini-2.5-flash-lite
+    const modelsToTry = [
+      "gemini-3.8-flash",
+      "gemini-flash-latest",
+      "gemini-flash-lite-latest",
+      "gemini-2.5-flash-lite",
+    ];
 
-    if (!res.ok) {
-      console.warn("[Gemini flash-lite failed, falling back to gemini-flash-latest]");
-      res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
+    let res: Response | null = null;
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+
+        if (response.ok) {
+          res = response;
+          break;
+        } else {
+          console.warn(`[Gemini model ${model} status: ${response.status}]`);
+        }
+      } catch (err) {
+        console.warn(`[Gemini model ${model} fetch error]`, err);
+      }
     }
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("[Gemini API Error]", res.status, errText);
+    if (!res || !res.ok) {
+      console.error("[All Gemini models failed or returned non-ok]");
       return generateFallbackResponse(message, tutors, true);
     }
 
@@ -414,18 +430,29 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
     let reply = rawText;
     let suggestions: string[] = [];
 
-    const suggestionsMatch = rawText.match(/SUGGESTIONS:\s*(\[[^\]]+\])/i);
+    const suggestionsMatch = rawText.match(/SUGGESTIONS:\s*(\[[^\]]*\]?)/i);
     if (suggestionsMatch && suggestionsMatch[1]) {
       try {
-        const parsed = JSON.parse(suggestionsMatch[1]) as string[];
+        let jsonStr = suggestionsMatch[1].trim();
+        if (!jsonStr.endsWith("]")) {
+          jsonStr = jsonStr.replace(/,\s*"?$/, "") + '"]';
+        }
+        const parsed = JSON.parse(jsonStr) as string[];
         if (Array.isArray(parsed) && parsed.length > 0) {
           suggestions = parsed.map((s) => String(s).trim()).filter(Boolean);
         }
       } catch {
         // Ignored if JSON parsing fails
       }
-      reply = rawText.replace(/SUGGESTIONS:\s*\[[^\]]+\]/i, "").trim();
     }
+
+    // ALWAYS clean any SUGGESTIONS:... or trailing cutoff from visible reply
+    reply = reply.replace(/SUGGESTIONS:[\s\S]*$/i, "").trim();
+
+    // Clean up any accidental nested markdown links: e.g. [Label]([Inner](url)) -> [Label](url)
+    reply = reply.replace(/\[([^\]]+)\]\(\[[^\]]*\]\(([^)]+)\)\)/g, "[$1]($2)");
+    // Clean up any domain prefixes for internal app routes
+    reply = reply.replace(/\[([^\]]+)\]\(https?:\/\/[^\/]+(\/student\/[^)]+)\)/g, "[$1]($2)");
 
     if (suggestions.length === 0) {
       suggestions = DEFAULT_SUGGESTIONS;
@@ -440,3 +467,4 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
     return generateFallbackResponse(message, tutors, true);
   }
 }
+

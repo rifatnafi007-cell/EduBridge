@@ -4,7 +4,7 @@ import { handleChatbotRequest } from "@/lib/chatbot.server";
 export const Route = createFileRoute("/api/chatbot")({
   server: {
     handlers: {
-      POST: async ({ request }: { request: Request }) => {
+      POST: async ({ request, context }: { request: Request; context?: any }) => {
         try {
           const body = (await request.json()) as {
             message?: string;
@@ -19,7 +19,12 @@ export const Route = createFileRoute("/api/chatbot")({
             );
           }
 
-          const result = await handleChatbotRequest(userMessage, body.history || []);
+          const runtimeKey =
+            context?.cloudflare?.env?.GEMINI_API_KEY ||
+            context?.env?.GEMINI_API_KEY ||
+            (request as any)?.cf?.env?.GEMINI_API_KEY;
+
+          const result = await handleChatbotRequest(userMessage, body.history || [], runtimeKey);
           return Response.json(result);
         } catch (error) {
           console.error("[api/chatbot error]", error);

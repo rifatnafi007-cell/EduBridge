@@ -5,7 +5,7 @@ import type { StudentPreferences, ScoredTutor } from "@/lib/recommendation";
 export const Route = createFileRoute("/api/recommendation-insights")({
   server: {
     handlers: {
-      POST: async ({ request }: { request: Request }) => {
+      POST: async ({ request, context }: { request: Request; context?: any }) => {
         try {
           const body = (await request.json()) as {
             preferences?: StudentPreferences;
@@ -19,7 +19,12 @@ export const Route = createFileRoute("/api/recommendation-insights")({
             );
           }
 
-          const result = await generateAIRecommendationInsights(body.preferences, body.topMatches);
+          const runtimeKey =
+            context?.cloudflare?.env?.GEMINI_API_KEY ||
+            context?.env?.GEMINI_API_KEY ||
+            (request as any)?.cf?.env?.GEMINI_API_KEY;
+
+          const result = await generateAIRecommendationInsights(body.preferences, body.topMatches, runtimeKey);
           return Response.json(result);
         } catch (error) {
           console.error("[api/recommendation-insights error]", error);

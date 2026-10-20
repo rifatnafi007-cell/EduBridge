@@ -47,6 +47,28 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (env && typeof env === "object") {
+        const envRecord = env as Record<string, any>;
+        if (typeof process === "undefined") {
+          (globalThis as any).process = { env: {} };
+        } else if (!process.env) {
+          (process as any).env = {};
+        }
+        Object.assign(process.env, envRecord);
+
+        (globalThis as any).__cf_env__ = envRecord;
+        (globalThis as any).env = {
+          ...((globalThis as any).env || {}),
+          ...envRecord,
+        };
+        if (envRecord["GEMINI_API_KEY"]) {
+          (globalThis as any).GEMINI_API_KEY = envRecord["GEMINI_API_KEY"];
+        }
+        if (envRecord["VITE_GEMINI_API_KEY"]) {
+          (globalThis as any).VITE_GEMINI_API_KEY = envRecord["VITE_GEMINI_API_KEY"];
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
