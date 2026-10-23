@@ -353,11 +353,34 @@ function getGeminiApiKey(customApiKey?: string): string | undefined {
 }
 
 /**
+ * Detect explicit greeting in user input.
+ */
+function hasExplicitGreeting(query: string): { hasSalam: boolean; hasHello: boolean } {
+  const lower = query.toLowerCase();
+  const hasSalam =
+    lower.includes("salam") ||
+    lower.includes("slm") ||
+    lower.includes("assalamu") ||
+    query.includes("সালাম") ||
+    query.includes("আলাইকুম");
+  const hasHello = /\b(hi|hello|hey|greetings)\b/i.test(query);
+
+  return { hasSalam, hasHello };
+}
+
+/**
  * Detect language intent from user input to enforce strict language adherence.
  */
 function detectLanguageDirective(query: string): string {
+  const { hasSalam, hasHello } = hasExplicitGreeting(query);
+  const greetingDirective = hasSalam
+    ? "User explicitly offered Salam. You may politely reply with 'ওয়ালাইকুম আসসালাম!'."
+    : hasHello
+      ? "User explicitly said Hello/Hi. You may greet them briefly."
+      : "The user did NOT greet or say Salam. DO NOT start with 'ওয়ালাইকুম আসসালাম!' or 'আসসালামু আলাইকুম!'. Directly answer their question immediately without forced greetings.";
+
   if (/[\u0980-\u09FF]/.test(query)) {
-    return "[MANDATORY LANGUAGE DIRECTIVE: User query is in Bengali script. Reply 100% in natural Bengali (বাংলা হরফে). ABSOLUTELY NO Arabic script under any circumstances.]";
+    return `[MANDATORY DIRECTIVE: User query is in Bengali script. Reply 100% in natural Bengali (বাংলা হরফে). ABSOLUTELY NO Arabic script. ${greetingDirective}]`;
   }
 
   const lower = query.toLowerCase();
@@ -366,19 +389,19 @@ function detectLanguageDirective(query: string): string {
     "korbo", "chai", "hobe", "ki", "keno", "kemon", "amar", "apnar", "amader",
     "ekjon", "porate", "porbo", "shikhte", "bujhte", "jani", "dekhao", "dao",
     "bolo", "bolen", "thake", "khujchi", "khujte", "shosta", "kom", "achi", "lagle",
-    "tutor", "teacher"
+    "tutor", "teacher", "nibo", "nebo"
   ];
 
   const words = lower.split(/[^a-z0-9]+/);
   const hasBanglishWord = words.some((w) =>
-    ["er", "valo", "bhalo", "kono", "ache", "ase", "kivabe", "lagbe", "koto", "korbo", "chai", "hobe", "ki", "keno", "kemon", "amar", "apnar", "ekjon", "dao", "bolo", "khujchi", "kom", "shosta"].includes(w)
+    ["er", "valo", "bhalo", "kono", "ache", "ase", "kivabe", "lagbe", "koto", "korbo", "chai", "hobe", "ki", "keno", "kemon", "amar", "apnar", "ekjon", "dao", "bolo", "khujchi", "kom", "shosta", "nibo", "nebo"].includes(w)
   );
 
   if (hasBanglishWord) {
-    return "[MANDATORY LANGUAGE DIRECTIVE: User query is in Banglish (Bengali written with English/Latin letters). Reply 100% in natural Bengali (বাংলা হরফে). ABSOLUTELY NO Arabic script under any circumstances.]";
+    return `[MANDATORY DIRECTIVE: User query is in Banglish (Bengali written in English letters). Reply 100% in natural Bengali (বাংলা হরফে). ABSOLUTELY NO Arabic script. ${greetingDirective}]`;
   }
 
-  return "[MANDATORY LANGUAGE DIRECTIVE: User query is in English. Reply 100% in pure English only. Do NOT use Bengali or Arabic.]";
+  return `[MANDATORY DIRECTIVE: User query is in English. Reply 100% in pure English only. Do NOT use Bengali or Arabic. ${greetingDirective}]`;
 }
 
 /**
@@ -432,17 +455,20 @@ CRITICAL LANGUAGE & OUTPUT RULES (HARD-CORE ENFORCEMENT):
 1. PURE ENGLISH: If the user query is written in English, you MUST reply 100% in pure English only. Do NOT include any Bengali words or Arabic script.
 2. BANGLISH & BENGALI: If the user query is written in Banglish (Bengali words written with English letters) OR in Bengali script, you MUST reply 100% in natural, polite Bengali (বাংলা লিপিতে). NEVER reply in English and NEVER use Arabic script.
 3. ABSOLUTE BAN ON ARABIC SCRIPT: Under NO circumstance should your response contain Arabic script (such as وعليكم السلام or السلام عليكم or any Arabic unicode characters).
-   * For Bengali greetings, write ONLY the authentic Bengali spelling: "আসসালামু আলাইকুম!".
-   * For English greetings, write "Hello!" or "Assalamu Alaikum!".
-4. BRAND NAME CLEANLINESS: Always write "EduBridge" cleanly once. NEVER duplicate or stutter like "EduBridge-Edubridge" or "EduBridge-EduBridge".
-5. RELATIVE URLS ONLY:
+4. GREETING DISCIPLINE (STRICT PRODUCTION RULE):
+   - DO NOT give an unprovoked greeting or Salam! If the user did NOT write "Salam", "Assalamu Alaikum", "আসসালামু আলাইকুম", "Hi", or "Hello" in their current message:
+     DO NOT start with "ওয়ালাইকুম আসসালাম!", "আসসালামু আলাইকুম!", or "Hello!". Directly and warmly answer their question immediately!
+   - Example: User asks "Apnader service amra keno nibo?", you MUST start directly: "EduBridge-এ আমাদের সেবা বেছে নেওয়ার মূল কারণগুলো হলো: ..." (NEVER say "ওয়ালাইকুম আসসালাম!").
+   - You may ONLY say "ওয়ালাইকুম আসসালাম!" IF AND ONLY IF the user explicitly offered Salam in their current message.
+5. BRAND NAME CLEANLINESS: Always write "EduBridge" cleanly once. NEVER duplicate or stutter like "EduBridge-Edubridge" or "EduBridge-EduBridge".
+6. RELATIVE URLS ONLY:
    * When recommending a tutor, format link strictly as: [View <Name>'s Profile](/student/tutor/<Tutor_ID>)
    * When referring to search, format strictly as: [Browse All Tutors](/student/search)
    * When referring to offers, format strictly as: [My Offers](/student/offers)
    * NEVER include domain names (such as localhost, edubridge.com, or https://...pages.dev) in any link or text.
    * NEVER nest markdown links (e.g. NEVER [Label]([Inner](url))).
-6. Structure answers clearly with concise bullet points. Do not invent fake tutors.
-7. Suggestions: At the very end of your response, on a new line, always provide 3 relevant follow-up questions formatted exactly as:
+7. Structure answers clearly with concise bullet points. Do not invent fake tutors.
+8. Suggestions: At the very end of your response, on a new line, always provide 3 relevant follow-up questions formatted exactly as:
 SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
 
   try {
@@ -625,6 +651,18 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       }
       return match;
     });
+
+    // 6. Enforce Greeting Discipline: Strip unprovoked Salam or Hello
+    const { hasSalam, hasHello } = hasExplicitGreeting(message);
+    if (!hasSalam) {
+      // Strip any opening "ওয়ালাইকুম আসসালাম", "ওয়ালাইকুমাসসালাম", "আসসালামু আলাইকুম", etc.
+      reply = reply.replace(/^(?:ওয়ালাইকুম\s*আসসালাম[!]?|ওয়ালাইকুমাসসালাম[!]?|আসসালামু\s*আলাইকুম[!]?|wa\s*alaikum\s*assalam[!]?)\s*/i, "");
+    }
+    if (!hasSalam && !hasHello) {
+      // Strip any stray opening "Hello!" or "Hi!"
+      reply = reply.replace(/^(?:hello[!,\s]+|hi[!,\s]+)/i, "");
+    }
+    reply = reply.replace(/^[!\s,।\-]+/, "");
 
     reply = reply.trim();
 
