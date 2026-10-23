@@ -66,7 +66,16 @@ export function TutorMap({
     markersLayerRef.current = markersGroup;
     mapInstanceRef.current = map;
 
+    // Handle container resize (e.g., orientation change or responsive toggle)
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -192,13 +201,14 @@ export function TutorMap({
               tutor.hourlyRate,
             )}</strong>
             <a href="/student/tutor/${tutor.id}" style="
-              background: #4f46e5;
+              background: #10B981;
               color: white;
-              padding: 4px 8px;
+              padding: 4px 10px;
               border-radius: 6px;
               text-decoration: none;
               font-size: 11px;
               font-weight: 600;
+              box-shadow: 0 1px 2px rgba(16, 185, 129, 0.3);
             ">View & Book</a>
           </div>
         </div>

@@ -46,12 +46,18 @@ async function fetchTutorsContext(): Promise<TutorRecord[]> {
   }
 
   try {
-    const { data, error } = await supabase
+    const fetchPromise = supabase
       .from("public_tutors")
       .select("id, full_name, subjects, hourly_rate, avg_rating, total_reviews, experience_years, bio, qualifications")
       .eq("is_active", true)
       .order("avg_rating", { ascending: false })
       .limit(20);
+
+    const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: { message: "Supabase timeout" } }), 3000),
+    );
+
+    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
     if (error || !data) {
       console.warn("[Chatbot] Could not load tutors context:", error?.message);
@@ -377,25 +383,29 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       },
     };
 
-    // 5. Try Gemini models in order: gemini-3.8-flash, gemini-flash-latest, gemini-flash-lite-latest, gemini-2.5-flash-lite
+    // 5. Try high-performance Gemini models with aggressive per-model timeouts (5s)
+    // gemini-3.5-flash-lite responds in ~900ms; gemini-3.5-flash in ~1.7s
     const modelsToTry = [
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
       "gemini-3.8-flash",
-      "gemini-flash-latest",
-      "gemini-flash-lite-latest",
-      "gemini-2.5-flash-lite",
     ];
 
     let res: Response | null = null;
     for (const model of modelsToTry) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       try {
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
             body: JSON.stringify(payload),
           },
         );
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           res = response;
@@ -404,6 +414,7 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
           console.warn(`[Gemini model ${model} status: ${response.status}]`);
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         console.warn(`[Gemini model ${model} fetch error]`, err);
       }
     }
@@ -449,10 +460,29 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
     // ALWAYS clean any SUGGESTIONS:... or trailing cutoff from visible reply
     reply = reply.replace(/SUGGESTIONS:[\s\S]*$/i, "").trim();
 
+    // Fix garbled tutor links with duplicated IDs/suffixes:
+    // e.g. [View Profile](http://localhost:8080/student/tutor/UUID)2-47c8-8c97-7d0da922b48d))
+    reply = reply.replace(
+      /\[([^\]]+)\]\((?:https?:\/\/[^\/]+)?(\/student\/tutor\/[0-9a-fA-F-]+)\)[a-zA-Z0-9_\-\)\(\]\[\/]*/g,
+      "[$1]($2)",
+    );
+
+    // Fix garbled search links with duplicated suffixes:
+    // e.g. [🔍 Browse All Tutors](http://localhost:8080/student/search)rs](/student/search))-এ
+    reply = reply.replace(
+      /\[([^\]]+)\]\((?:https?:\/\/[^\/]+)?(\/student\/search)\)[a-zA-Z0-9_\-\)\(\]\[\/]*/g,
+      "[$1]($2)",
+    );
+
     // Clean up any accidental nested markdown links: e.g. [Label]([Inner](url)) -> [Label](url)
-    reply = reply.replace(/\[([^\]]+)\]\(\[[^\]]*\]\(([^)]+)\)\)/g, "[$1]($2)");
-    // Clean up any domain prefixes for internal app routes
+    reply = reply.replace(/\[([^\]]+)\]\(\[?[^\]\)]*?(\/student\/[^)\s]+)\)?\)/g, "[$1]($2)");
+
+    // Clean up any domain prefixes for internal app routes (e.g. http://localhost:8080/student/... -> /student/...)
     reply = reply.replace(/\[([^\]]+)\]\(https?:\/\/[^\/]+(\/student\/[^)]+)\)/g, "[$1]($2)");
+
+    // Clean outer or stray trailing parentheses: ([Label](url)) -> [Label](url)
+    reply = reply.replace(/\(\s*(\[[^\]]+\]\([^)]+\))\s*\)/g, "$1");
+    reply = reply.replace(/(\[[^\]]+\]\([^)]+\))\s*\)+/g, "$1");
 
     if (suggestions.length === 0) {
       suggestions = DEFAULT_SUGGESTIONS;

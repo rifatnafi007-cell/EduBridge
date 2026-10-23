@@ -98,7 +98,7 @@ function AvailabilityPage() {
     <div>
       <PageHeader title="My availability" subtitle="Students can only book the slots you publish here." />
 
-      <div className="mb-8 grid gap-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+      <div className="mb-8 grid gap-4 rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
         <div className="space-y-2">
           <Label>Day</Label>
           <Select value={day} onValueChange={setDay}>
@@ -122,7 +122,7 @@ function AvailabilityPage() {
           <Label htmlFor="end">End</Label>
           <Input id="end" type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
         </div>
-        <Button onClick={() => void addSlot()} disabled={saving || !tutorId}>
+        <Button className="w-full sm:w-auto font-semibold" onClick={() => void addSlot()} disabled={saving || !tutorId}>
           <Plus className="mr-2 h-4 w-4" /> Add slot
         </Button>
       </div>
@@ -130,7 +130,7 @@ function AvailabilityPage() {
       {slotsQuery.isLoading ? (
         <RowsSkeleton rows={3} />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 w-full min-w-0">
           {DAYS.map((d, i) => {
             const daySlots = slots.filter((s) => s.day_of_week === i);
             return (

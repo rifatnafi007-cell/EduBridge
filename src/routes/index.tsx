@@ -83,24 +83,24 @@ function Landing() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-24">
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
               <BookOpen className="h-3.5 w-3.5" /> Trusted by students across Bangladesh
             </span>
-            <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
+            <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
               Find the right home tutor, without the guesswork.
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-muted-foreground">
+            <p className="mt-4 max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed">
               EduBridge connects students and guardians with verified tutors. Compare ratings and rates, then send an
               offer for a slot that actually works for both of you.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <Button asChild size="lg" className="w-full sm:w-auto">
                 <Link to="/register">Find a tutor</Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
                 <Link to="/register">Become a tutor</Link>
               </Button>
             </div>
@@ -125,7 +125,7 @@ function Landing() {
             {isLoading ? (
               <LoadingSkeleton count={3} />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 w-full min-w-0">
                 {(tutors ?? []).map((t) => (
                   <TutorCard key={t.id} tutor={t} />
                 ))}

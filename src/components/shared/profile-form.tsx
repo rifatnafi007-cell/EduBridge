@@ -9,8 +9,13 @@ import { UserAvatar } from "@/components/shared/user-avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
-export function ProfileForm() {
-  const { user, profile, refresh } = useAuth();
+interface ProfileFormProps {
+  hideAcademicFields?: boolean;
+}
+
+export function ProfileForm({ hideAcademicFields = false }: ProfileFormProps = {}) {
+  const { role, user, profile, refresh } = useAuth();
+  const showAcademicFields = !hideAcademicFields && role !== "admin";
   const fileRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -35,13 +40,15 @@ export function ProfileForm() {
     setSaving(true);
 
     try {
-      // 1. Update user_metadata in Supabase Auth (ensures instant persistence)
-      await supabase.auth.updateUser({
-        data: {
-          institution: institution.trim() || null,
-          grade: grade.trim() || null,
-        },
-      });
+      // 1. Update user_metadata in Supabase Auth if academic fields apply
+      if (showAcademicFields) {
+        await supabase.auth.updateUser({
+          data: {
+            institution: institution.trim() || null,
+            grade: grade.trim() || null,
+          },
+        });
+      }
 
       // 2. Update profiles table
       const { error } = await supabase
@@ -88,7 +95,7 @@ export function ProfileForm() {
   }
 
   return (
-    <form onSubmit={save} className="max-w-xl space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+    <form onSubmit={save} className="max-w-xl space-y-6 rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm">
       <div className="flex items-center gap-4">
         <UserAvatar name={profile?.full_name ?? "User"} path={profile?.avatar_url} className="h-16 w-16" />
         <div>
@@ -121,32 +128,40 @@ export function ProfileForm() {
       <div className="space-y-2">
         <Label htmlFor="address">Address / area</Label>
         <Textarea id="address" rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="e.g. House 12, Road 5, Dhanmondi, Dhaka" />
-        <p className="text-xs text-muted-foreground">Required for geographic matching and distance calculation.</p>
+        <p className="text-xs text-muted-foreground">
+          {role === "admin"
+            ? "Administrative contact address or office area."
+            : "Required for geographic matching and distance calculation."}
+        </p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="institution">Current study institution or passed one</Label>
-        <Input
-          id="institution"
-          value={institution}
-          onChange={(e) => setInstitution(e.target.value)}
-          placeholder="e.g. University of Dhaka, Notre Dame College, Viqarunnisa Noon School, BUET"
-        />
-        <p className="text-xs text-muted-foreground">Required to verify academic background.</p>
-      </div>
+      {showAcademicFields && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="institution">Current study institution or passed one</Label>
+            <Input
+              id="institution"
+              value={institution}
+              onChange={(e) => setInstitution(e.target.value)}
+              placeholder="e.g. University of Dhaka, Notre Dame College, Viqarunnisa Noon School, BUET"
+            />
+            <p className="text-xs text-muted-foreground">Required to verify academic background.</p>
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="grade">Current grade / GPA / Academic result</Label>
-        <Input
-          id="grade"
-          value={grade}
-          onChange={(e) => setGrade(e.target.value)}
-          placeholder="e.g. Class 10 (GPA 5.00), HSC Candidate, BSc (CGPA 3.82)"
-        />
-        <p className="text-xs text-muted-foreground">Helps tutors evaluate your level and requirements.</p>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="grade">Current grade / GPA / Academic result</Label>
+            <Input
+              id="grade"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              placeholder="e.g. Class 10 (GPA 5.00), HSC Candidate, BSc (CGPA 3.82)"
+            />
+            <p className="text-xs text-muted-foreground">Helps tutors evaluate your level and requirements.</p>
+          </div>
+        </>
+      )}
 
-      <Button type="submit" disabled={saving}>
+      <Button type="submit" className="w-full sm:w-auto font-semibold" disabled={saving}>
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Save changes
       </Button>

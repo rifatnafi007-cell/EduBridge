@@ -102,7 +102,7 @@ export function Navbar() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-2rem))] max-w-[90vw]">
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {notifications.length === 0 && (
@@ -157,21 +157,50 @@ export function Navbar() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-64">
-              <SheetTitle className="mb-4">Menu</SheetTitle>
-              <nav className="flex flex-col gap-1">
-                {links.map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={() => setMobileOpen(false)}
-                    activeProps={{ className: "bg-accent text-accent-foreground" }}
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
+            <SheetContent side="right" className="w-[min(18rem,85vw)] sm:w-80 flex flex-col justify-between p-5">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-border">
+                  <UserAvatar name={profile?.full_name ?? "User"} path={profile?.avatar_url} className="h-10 w-10 ring-2 ring-primary/20" />
+                  <div className="min-w-0 flex-1">
+                    <SheetTitle className="text-sm font-semibold truncate text-foreground">{profile?.full_name || "Account"}</SheetTitle>
+                    <p className="text-xs text-muted-foreground capitalize">{role ? `${role} portal` : "Student"}</p>
+                  </div>
+                </div>
+
+                <nav className="flex flex-col gap-1">
+                  {links.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileOpen(false)}
+                      activeProps={{ className: "bg-primary/10 text-primary font-semibold" }}
+                      className="rounded-lg px-3.5 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+              </div>
+
+              <div className="border-t border-border pt-3 space-y-1">
+                <Link
+                  to={profilePath}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                >
+                  <UserIcon className="h-4 w-4" /> Profile settings
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    void signOut();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 text-left"
+                >
+                  <LogOut className="h-4 w-4" /> Log out
+                </button>
+              </div>
             </SheetContent>
           </Sheet>
         </div>

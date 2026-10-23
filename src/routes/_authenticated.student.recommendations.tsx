@@ -279,7 +279,7 @@ function StudentRecommendationsPage() {
           {/* Academic Primary Goal */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold text-foreground">1. What is your primary learning goal?</Label>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 w-full min-w-0">
               {(Object.keys(GOAL_LABELS) as AcademicGoal[]).map((goalKey) => {
                 const isSelected = preferences.primaryGoal === goalKey;
                 const info = GOAL_LABELS[goalKey];
@@ -378,7 +378,7 @@ function StudentRecommendationsPage() {
           {/* Teaching Style Preference */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold text-foreground">3. What teaching style works best for you?</Label>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 w-full min-w-0">
               {(Object.keys(STYLE_LABELS) as TeachingStylePreference[]).map((styleKey) => {
                 const isSelected = preferences.teachingStyle === styleKey;
                 const info = STYLE_LABELS[styleKey];
@@ -570,7 +570,7 @@ function StudentRecommendationsPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 w-full min-w-0">
               {(aiInsights?.fourWeekRoadmap || [
                 { week: 1, title: "Diagnostic Assessment", focus: "Baseline concept check & formula inventory." },
                 { week: 2, title: "Problem-Solving Drills", focus: "Step-by-step textbook and creative exercises." },
@@ -623,14 +623,14 @@ function StudentRecommendationsPage() {
               <div className="space-y-6">
                 {/* 1. SPOTLIGHT: #1 TOP CHAMPION RECOMMENDATION */}
                 {topChampion && (
-                  <div className="relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-card p-6 shadow-md transition-all hover:shadow-lg">
-                    <div className="absolute top-0 right-0 rounded-bl-xl bg-primary px-4 py-1 text-xs font-bold text-primary-foreground shadow-2xs flex items-center gap-1">
+                  <div className="relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-card p-4 sm:p-6 shadow-md transition-all hover:shadow-lg">
+                    <div className="sm:absolute sm:top-0 sm:right-0 inline-flex mb-3 sm:mb-0 w-fit rounded-lg sm:rounded-none sm:rounded-bl-xl bg-primary px-3 sm:px-4 py-1 text-xs font-bold text-primary-foreground shadow-2xs items-center gap-1">
                       <Award className="h-3.5 w-3.5" /> #1 Best Overall Match ({topChampion.match.overallScore}%)
                     </div>
 
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between pt-2">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between sm:pt-2">
                       {/* Left: Avatar & Profile */}
-                      <div className="flex items-start gap-4 max-w-2xl">
+                      <div className="flex flex-col sm:flex-row items-start gap-4 max-w-2xl">
                         <UserAvatar
                           name={topChampion.tutor.profiles?.full_name ?? "Tutor"}
                           path={topChampion.tutor.profiles?.avatar_url}
@@ -699,7 +699,7 @@ function StudentRecommendationsPage() {
                     </div>
 
                     {/* Match Score Breakdown Bars */}
-                    <div className="mt-4 grid gap-3 rounded-xl border border-border bg-muted/20 p-3 text-xs sm:grid-cols-4">
+                    <div className="mt-4 grid gap-3 rounded-xl border border-border bg-muted/20 p-3 text-xs grid-cols-2 sm:grid-cols-4">
                       <div>
                         <div className="flex justify-between text-muted-foreground mb-1">
                           <span>Subject & Goal</span>
@@ -746,7 +746,7 @@ function StudentRecommendationsPage() {
                     <h4 className="text-sm font-bold text-foreground">
                       Alternative Options ({rankedTutors.length - 1})
                     </h4>
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 w-full min-w-0">
                       {rankedTutors.slice(1).map((alt) => {
                         const isBestValue = alt.badgeType === "best_value";
                         const isVeteran = alt.badgeType === "veteran_specialist";
@@ -754,10 +754,10 @@ function StudentRecommendationsPage() {
                         return (
                           <article
                             key={alt.tutor.id}
-                            className="rounded-xl border border-border bg-card p-5 shadow-xs flex flex-col justify-between"
+                            className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs flex flex-col justify-between"
                           >
                             <div>
-                              <div className="flex items-center justify-between mb-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                                 {isBestValue ? (
                                   <Badge
                                     variant="outline"

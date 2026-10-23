@@ -180,7 +180,7 @@ function AdminProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ProfileForm />
+              <ProfileForm hideAcademicFields />
             </CardContent>
           </Card>
         </div>

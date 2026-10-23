@@ -108,9 +108,9 @@ function StudentDashboard() {
 
       <ProfileCompletionCard />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 w-full min-w-0">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div key={s.label} className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm min-w-0">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{s.label}</p>
               <s.icon className="h-4 w-4 text-primary" />
@@ -120,7 +120,7 @@ function StudentDashboard() {
         ))}
       </div>
 
-      <section className="mt-10">
+      <section className="mt-10 w-full min-w-0">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Recent offers</h2>
           <Button asChild variant="ghost" size="sm">
@@ -141,19 +141,19 @@ function StudentDashboard() {
             }
           />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 w-full min-w-0">
             {offers.map((offer) => (
               <Link
                 key={offer.id}
                 to="/student/offer/$id"
                 params={{ id: offer.id }}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md min-w-0"
               >
-                <div>
-                  <p className="font-medium text-foreground">
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground truncate">
                     {offer.tutor_profiles?.profiles?.full_name ?? "Tutor"}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {formatDate(offer.created_at)} · {offer.offer_slots.length} slot(s) ·{" "}
                     {formatTaka(offer.total_amount)}
                   </p>
@@ -165,15 +165,15 @@ function StudentDashboard() {
         )}
       </section>
 
-      <section className="mt-10">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+      <section className="mt-10 w-full min-w-0">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full min-w-0">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <h2 className="text-lg font-semibold text-foreground">AI Recommended Tutors</h2>
             <Badge variant="outline" className="border-primary/30 bg-primary/5 text-primary text-xs gap-1 py-0.5 px-2 font-medium">
               <Sparkles className="h-3 w-3" /> Personalized
             </Badge>
           </div>
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="w-fit">
             <Link to="/student/recommendations">
               <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" /> Tune Preferences
             </Link>
@@ -193,7 +193,7 @@ function StudentDashboard() {
             }
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 w-full min-w-0">
             {recommendedMatches.map((m) => (
               <TutorCard key={m.tutor.id} tutor={m.tutor} matchScore={m.match.overallScore} />
             ))}

@@ -33,7 +33,7 @@ export const Route = createFileRoute("/api/chatbot")({
               reply: "Sorry, I had trouble processing that request. Please try again in a moment.",
               suggestions: ["Find Math tutors", "How do booking offers work?"],
             },
-            { status: 500 },
+            { status: 200 },
           );
         }
       },

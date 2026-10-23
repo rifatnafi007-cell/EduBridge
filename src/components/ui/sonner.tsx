@@ -7,6 +7,7 @@ const Toaster = ({
   duration = 4000,
   expand = true,
   gap = 12,
+  position = "bottom-left",
   ...props
 }: ToasterProps) => {
   return (
@@ -16,6 +17,7 @@ const Toaster = ({
       duration={duration}
       expand={expand}
       gap={gap}
+      position={position}
       toastOptions={{
         style: {
           "--toast-duration": `${duration}ms`,

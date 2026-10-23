@@ -162,9 +162,9 @@ function TutorDetail() {
   const name = tutor.profiles?.full_name ?? "Tutor";
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+    <div className="grid gap-6 pb-20 lg:pb-0 lg:grid-cols-[1fr_340px]">
       <div className="space-y-6">
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm">
           <div className="flex flex-wrap items-start gap-4">
             <UserAvatar name={name} path={tutor.profiles?.avatar_url} className="h-16 w-16" />
             <div className="min-w-0 flex-1">
@@ -185,7 +185,7 @@ function TutorDetail() {
 
           {tutor.bio && <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{tutor.bio}</p>}
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 w-full min-w-0">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Subjects</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -349,6 +349,29 @@ function TutorDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sticky Mobile Bottom Booking Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-between border-t border-border bg-card/95 px-4 py-3 backdrop-blur shadow-lg lg:hidden">
+        <div>
+          <div className="text-sm font-bold text-foreground">
+            {selected.length > 0 ? formatTaka(total) : formatTaka(rate)}
+            <span className="text-xs font-normal text-muted-foreground">
+              {selected.length > 0 ? ` (${selected.length} slot${selected.length > 1 ? "s" : ""})` : " / session"}
+            </span>
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            {selected.length > 0 ? "Ready to book" : "Select weekly slot(s) above"}
+          </div>
+        </div>
+        <Button
+          size="sm"
+          disabled={selected.length === 0}
+          onClick={() => setOpen(true)}
+          className="h-9 px-4 font-semibold shadow-xs"
+        >
+          Send offer
+        </Button>
+      </div>
     </div>
   );
 }

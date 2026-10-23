@@ -31,6 +31,7 @@ import { ProfileGateCard } from "@/components/shared/profile-gate-card";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
 import { supabase } from "@/integrations/supabase/client";
 import { LEVELS, SUBJECTS, formatTaka } from "@/lib/edubridge";
+import { cn } from "@/lib/utils";
 import {
   BANGLADESH_AREAS,
   calculateDistanceKm,
@@ -81,6 +82,7 @@ function SearchPage() {
   const [selectedHub, setSelectedHub] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"split" | "grid" | "map">("split");
   const [selectedMapTutorId, setSelectedMapTutorId] = useState<string | null>(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState<boolean>(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["tutor-search"],
@@ -187,8 +189,16 @@ function SearchPage() {
     onlyRated,
     userLocation,
     radiusKm,
-    filterByRadius,
   ]);
+
+  const activeFilterCount =
+    (q.trim() ? 1 : 0) +
+    (subject !== "all" ? 1 : 0) +
+    (level !== "all" ? 1 : 0) +
+    (userLocation ? 1 : 0) +
+    (maxRate < 2000 ? 1 : 0) +
+    (minRating > 0 ? 1 : 0) +
+    (onlyRated ? 1 : 0);
 
   // Format tutors for Leaflet map component (Only tutors with completed location profiles)
   const mapTutors: MapTutor[] = useMemo(() => {
@@ -316,19 +326,39 @@ function SearchPage() {
 
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
         {/* Left Filter Sidebar */}
-        <aside className="h-fit rounded-2xl border border-border bg-card p-5 shadow-xs space-y-6">
+        <aside
+          className={cn(
+            "h-fit rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-6 transition-all",
+            !mobileFiltersOpen && "hidden lg:block",
+          )}
+        >
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-bold text-foreground">Filters & Location</h2>
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5 text-[11px] font-bold">
+                  {activeFilterCount}
+                </Badge>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={reset}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Reset
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={reset}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="lg:hidden text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted"
+                aria-label="Close filters"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="space-y-5">
@@ -534,62 +564,87 @@ function SearchPage() {
         {/* Right Search Results & Interactive Map */}
         <div className="space-y-4">
           {/* Top Bar with View Mode and Sort */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 shadow-2xs">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-foreground">
-                {results.length} tutor{results.length === 1 ? "" : "s"} found
-              </p>
-              {userLocation && (
-                <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 text-[11px] gap-1 font-semibold">
-                  <MapPin className="h-3 w-3" /> Within {radiusKm} km
-                </Badge>
-              )}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 shadow-2xs">
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+              <div className="flex items-center gap-2">
+                <p className="text-xs sm:text-sm font-semibold text-foreground">
+                  {results.length} tutor{results.length === 1 ? "" : "s"} found
+                </p>
+                {userLocation && (
+                  <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 text-[10px] sm:text-[11px] gap-1 font-semibold py-0.5">
+                    <MapPin className="h-3 w-3" /> Within {radiusKm} km
+                  </Badge>
+                )}
+              </div>
+
+              {/* Mobile Filter Toggle Button */}
+              <Button
+                type="button"
+                variant={mobileFiltersOpen || activeFilterCount > 0 ? "default" : "outline"}
+                size="sm"
+                onClick={() => setMobileFiltersOpen((prev) => !prev)}
+                className="lg:hidden gap-1.5 text-xs h-7.5 px-2.5 font-semibold"
+              >
+                <SlidersHorizontal className="h-3 w-3" />
+                <span>Filters</span>
+                {activeFilterCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="h-4.5 min-w-4 px-1 text-[10px] ml-0.5 bg-background text-foreground font-bold"
+                  >
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between sm:justify-end gap-2">
               {/* View Mode Toggle */}
               <div className="flex items-center rounded-lg border border-border bg-muted p-0.5">
                 <button
                   type="button"
                   title="Split Map & Grid"
                   onClick={() => setViewMode("split")}
-                  className={`flex h-7 items-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-all ${
+                  className={`flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-all ${
                     viewMode === "split"
                       ? "bg-card text-foreground shadow-2xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <MapIcon className="h-3.5 w-3.5" /> Split
+                  <MapIcon className="h-3.5 w-3.5" />
+                  <span className="hidden xs:inline sm:inline">Split</span>
                 </button>
                 <button
                   type="button"
                   title="Grid Only"
                   onClick={() => setViewMode("grid")}
-                  className={`flex h-7 items-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-all ${
+                  className={`flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-all ${
                     viewMode === "grid"
                       ? "bg-card text-foreground shadow-2xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <LayoutGrid className="h-3.5 w-3.5" /> Grid
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span className="hidden xs:inline sm:inline">Grid</span>
                 </button>
                 <button
                   type="button"
                   title="Map Only"
                   onClick={() => setViewMode("map")}
-                  className={`flex h-7 items-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-all ${
+                  className={`flex h-7 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-all ${
                     viewMode === "map"
                       ? "bg-card text-foreground shadow-2xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <MapIcon className="h-3.5 w-3.5" /> Full Map
+                  <MapIcon className="h-3.5 w-3.5" />
+                  <span className="hidden xs:inline sm:inline">Map</span>
                 </button>
               </div>
 
               {/* Sort Dropdown */}
               <Select value={sort} onValueChange={setSort}>
-                <SelectTrigger className="w-40 h-8 text-xs bg-card">
+                <SelectTrigger className="w-32 sm:w-40 h-7.5 sm:h-8 text-xs bg-card">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -610,7 +665,7 @@ function SearchPage() {
                 <span className="font-semibold text-foreground flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5 text-primary" /> Interactive Home Tuition Map
                 </span>
-                <span>Click any pin to inspect tutor rate & distance</span>
+                <span className="hidden sm:inline">Click any pin to inspect tutor rate & distance</span>
               </div>
               {!isLocationSearchUnlocked && (
                 <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-800 dark:text-amber-300 font-medium">
@@ -626,7 +681,7 @@ function SearchPage() {
                 radiusKm={radiusKm}
                 selectedTutorId={selectedMapTutorId}
                 onSelectTutor={(id) => setSelectedMapTutorId(id)}
-                className={viewMode === "map" ? "h-[620px] w-full" : "h-[360px] w-full"}
+                className={viewMode === "map" ? "h-[min(620px,calc(100dvh-13rem))] min-h-[380px] w-full" : "h-[240px] sm:h-[360px] w-full"}
               />
             </div>
           )}
@@ -648,7 +703,7 @@ function SearchPage() {
                   }
                 />
               ) : (
-                <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3 w-full min-w-0">
                   {results.map((t) => (
                     <TutorCard
                       key={t.id}

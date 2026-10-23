@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import {
   Bot,
   ChevronRight,
@@ -45,12 +45,9 @@ function cleanUrlAndLabel(rawLabel: string, rawUrl: string) {
     url = innerUrlMatch[1].trim();
   }
 
-  // Strip nested brackets from label e.g. [Browse All Tutors] -> Browse All Tutors
-  label = label.replace(/^\[+|\]+$/g, "").trim();
-
-  // Strip trailing stray parentheses or brackets e.g. /student/tutor/123)
-  url = url.replace(/[)\]]+$/, "").trim();
-  label = label.replace(/[)\]]+$/, "").trim();
+  // Strip any wrapping brackets or parentheses from label and url
+  label = label.replace(/^[\(\[]+|[\)\]]+$/g, "").trim();
+  url = url.replace(/^[<(\[]+|[>)\]]+$/g, "").trim();
 
   // Decode URI component if percent-encoded paths exist
   try {
@@ -109,7 +106,7 @@ function renderInline(text: string) {
     "[$1]($2)",
   );
 
-  const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+  const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*\n]+)\*\*/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -191,29 +188,59 @@ function renderInline(text: string) {
   return parts;
 }
 
-function sanitizeRawLinks(text: string): string {
-  // Strip outer wrapping parentheses around markdown links: ([Label](url)) -> [Label](url)
-  let sanitized = text.replace(/\(\s*(\[[^\]]+\]\([^)]+\))\s*\)/g, "$1");
-  // Strip stray trailing ) after a markdown link: [Label](url)) -> [Label](url)
-  sanitized = sanitized.replace(/(\[[^\]]+\]\([^)]+\))\s*\)/g, "$1");
+function cleanChatbotMarkdown(text: string): string {
+  if (!text) return "";
 
-  // Catch unbracketed raw tutor URLs like /student/tutor/UUID or http://localhost:8080/student/tutor/UUID
-  sanitized = sanitized.replace(
-    /(?:https?:\/\/[^\s/]+)?\/student\/tutor\/([0-9a-fA-F-]+)/g,
-    "[View Tutor Profile](/student/tutor/$1)",
+  let cleaned = text;
+
+  // 1. Remove SUGGESTIONS section if present
+  cleaned = cleaned.replace(/SUGGESTIONS:[\s\S]*$/i, "").trim();
+
+  // 2. Fix garbled tutor links with duplicated IDs/brackets:
+  // e.g. [View Nusrat Jahan's Profile](http://localhost:8080/student/tutor/UUID)2-47c8-8c97-7d0da922b48d))
+  cleaned = cleaned.replace(
+    /\[([^\]]+)\]\((?:https?:\/\/[^\/]+)?(\/student\/tutor\/[0-9a-fA-F-]+)\)[a-zA-Z0-9_\-\)\(\]\[\/]*/g,
+    "[$1]($2)",
   );
 
-  // Catch unbracketed raw search URLs like http://localhost:8080/student/search
-  sanitized = sanitized.replace(
-    /(?:https?:\/\/[^\s/]+)?\/student\/search/g,
-    "[Browse All Tutors](/student/search)",
+  // 3. Fix garbled search links with duplicated suffixes:
+  // e.g. [🔍 Browse All Tutors](http://localhost:8080/student/search)rs](/student/search))-এ
+  cleaned = cleaned.replace(
+    /\[([^\]]+)\]\((?:https?:\/\/[^\/]+)?(\/student\/search)\)[a-zA-Z0-9_\-\)\(\]\[\/]*/g,
+    "[$1]($2)",
   );
 
-  return sanitized;
+  // 4. Fix any other nested links: [Label]([Inner](url)) -> [Label](url)
+  cleaned = cleaned.replace(
+    /\[([^\]]+)\]\(\[?[^\]\)]*?(\/student\/[^)\s]+)\)?\)/g,
+    "[$1]($2)",
+  );
+
+  // 5. Strip domain/localhost from any remaining internal links
+  cleaned = cleaned.replace(
+    /\[([^\]]+)\]\(https?:\/\/[^\/]+(\/student\/[^)]+)\)/g,
+    "[$1]($2)",
+  );
+
+  // 6. Clean outer/stray parentheses: ([Label](url)) -> [Label](url)
+  cleaned = cleaned.replace(/\(\s*(\[[^\]]+\]\([^)]+\))\s*\)/g, "$1");
+  cleaned = cleaned.replace(/(\[[^\]]+\]\([^)]+\))\s*\)+/g, "$1");
+
+  // 7. Fix unbracketed standalone tutor / search URLs (only when NOT already in markdown link)
+  cleaned = cleaned.replace(
+    /(^|[\s,。])(?:https?:\/\/[^\s/]+)?(\/student\/tutor\/[0-9a-fA-F-]+)(?=[^\w\/-]|$)/g,
+    "$1[View Tutor Profile]($2)",
+  );
+  cleaned = cleaned.replace(
+    /(^|[\s,。])(?:https?:\/\/[^\s/]+)?(\/student\/search)(?=[^\w\/-]|$)/g,
+    "$1[Browse All Tutors]($2)",
+  );
+
+  return cleaned;
 }
 
 function FormattedContent({ text }: { text: string }) {
-  const sanitized = sanitizeRawLinks(text);
+  const sanitized = cleanChatbotMarkdown(text);
   const lines = sanitized.split("\n");
 
   return (
@@ -292,6 +319,8 @@ function TypewriterMessage({
 }
 
 export function ChatWidget() {
+  const location = useLocation();
+  const hasStickyBottomBar = location.pathname.includes("/student/tutor/");
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -339,6 +368,9 @@ export function ChatWidget() {
     setInput("");
     setSending(true);
 
+    const abortController = new AbortController();
+    const clientTimeoutId = setTimeout(() => abortController.abort(), 15000);
+
     try {
       const historyPayload = updatedMessages.map((m) => ({
         role: m.role,
@@ -348,16 +380,20 @@ export function ChatWidget() {
       const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: abortController.signal,
         body: JSON.stringify({
           message: text,
           history: historyPayload,
         }),
       });
+      clearTimeout(clientTimeoutId);
 
-      const data = (await res.json()) as {
-        reply?: string;
-        suggestions?: string[];
-      };
+      let data: { reply?: string; suggestions?: string[] } = {};
+      try {
+        data = (await res.json()) as { reply?: string; suggestions?: string[] };
+      } catch {
+        console.warn("[ChatWidget] Non-JSON response received from /api/chatbot");
+      }
 
       const replyText =
         data.reply ||
@@ -382,14 +418,20 @@ export function ChatWidget() {
           suggestions: newSuggestions,
         },
       ]);
-    } catch (err) {
+    } catch (err: any) {
+      clearTimeout(clientTimeoutId);
       console.error("[ChatWidget] Send error:", err);
+      const isAbort = err?.name === "AbortError";
+      const errorText = isAbort
+        ? "The request took longer than expected to reach our AI service. Please try asking again."
+        : "I encountered an issue connecting to the AI service. Please try again in a moment.";
+
       setMessages((prev) => [
         ...prev,
         {
           id: nextId.current++,
           role: "assistant",
-          text: "I encountered an issue connecting to the AI service. Please try again in a moment.",
+          text: errorText,
           suggestions: INITIAL_SUGGESTIONS,
         },
       ]);
@@ -407,7 +449,12 @@ export function ChatWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-4 z-[100] flex h-[540px] w-[min(25rem,calc(100vw-2rem))] flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-4">
+        <div
+          className={cn(
+            "fixed right-3 left-3 sm:left-auto sm:right-6 z-[100] flex h-[min(560px,calc(100dvh-5.5rem))] sm:h-[540px] w-auto sm:w-[25rem] flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-4",
+            hasStickyBottomBar ? "bottom-24 sm:bottom-24" : "bottom-18 sm:bottom-24"
+          )}
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-3">
             <div className="flex items-center gap-2.5">
@@ -485,15 +532,21 @@ export function ChatWidget() {
               </div>
             ))}
 
-            {/* 1. First: Thinking Effect (while waiting for response) */}
+            {/* Thinking Effect (Google 3-dot circular rotating animation) */}
             {sending && (
               <div className="flex items-start gap-2.5 animate-in fade-in duration-200">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs mt-0.5">
                   <Bot className="h-4 w-4" />
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-medium text-primary shadow-2xs">
-                  <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
-                  <span>Thinking...</span>
+                <div className="flex items-center gap-2.5 rounded-2xl border border-primary/20 bg-primary/5 px-3.5 py-2 text-xs font-medium text-primary shadow-xs rounded-tl-xs backdrop-blur-xs">
+                  <div className="google-thinking-spinner" aria-label="Thinking indicator">
+                    <span className="google-dot google-dot-1" />
+                    <span className="google-dot google-dot-2" />
+                    <span className="google-dot google-dot-3" />
+                  </div>
+                  <span className="text-xs text-primary font-medium animate-pulse">
+                    Thinking...
+                  </span>
                 </div>
               </div>
             )}
@@ -556,13 +609,16 @@ export function ChatWidget() {
       <Button
         onClick={() => setOpen((prev) => !prev)}
         size="icon"
-        className="fixed bottom-6 right-4 z-[100] h-14 w-14 rounded-full shadow-lg hover:shadow-primary/25 transition-all hover:scale-105 duration-200 [&_svg]:!size-7.5"
+        className={cn(
+          "fixed right-3 sm:right-6 z-[100] h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg hover:shadow-primary/25 transition-all hover:scale-105 duration-200 [&_svg]:!size-6 sm:[&_svg]:!size-7.5",
+          hasStickyBottomBar ? "bottom-20 sm:bottom-6" : "bottom-4 sm:bottom-6"
+        )}
         aria-label="Open AI assistant"
       >
         {open ? (
-          <X className="!size-6" />
+          <X className="!size-5 sm:!size-6" />
         ) : (
-          <Bot className="!size-7.5" />
+          <Bot className="!size-6 sm:!size-7.5" />
         )}
       </Button>
     </>

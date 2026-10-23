@@ -15,7 +15,7 @@ export function ProfileCompletionCard() {
   if (percentage === 100) return null;
 
   return (
-    <div className="mb-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+    <div className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm">
       {/* Header row */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
