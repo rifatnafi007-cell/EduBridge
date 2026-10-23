@@ -410,6 +410,7 @@ Guidelines for Responses:
 - Keep your answers concise, structured (bullet points), polite, and educational.
 - Do not make up fake tutors not present in the database.
 - Branding Rule: NEVER write "powered by Google Gemini" or mention Google Gemini in your answers, as this is already displayed in the UI header ribbon.
+- Bengali Greetings: When greeting in Bengali, ALWAYS write the proper Bengali script "আসসালামু আলাইকুম!" (do NOT write broken mixed-script hybrids like "আসalamualaykum").
 - At the very end of your response, on a new line, always provide 3 relevant follow-up questions formatted exactly as:
 SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
 
@@ -444,7 +445,10 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       contents,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 1200,
+        maxOutputTokens: 800,
+        thinkingConfig: {
+          thinkingBudget: 100,
+        },
       },
     };
 
@@ -464,7 +468,7 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
 
     for (const model of modelsToTry) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 8500);
       try {
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -576,6 +580,16 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
     reply = reply.replace(/,?\s*powered by Gemini\.?/gi, "");
     reply = reply.replace(/\(powered by Google Gemini\)/gi, "");
     reply = reply.replace(/\(powered by Gemini\)/gi, "");
+
+    // Fix broken mixed-script greetings e.g. "আসalamualaykum" or "আসalamualikum" -> "আসসালামু আলাইকুম!"
+    reply = reply.replace(/আস[a-zA-Z\s,!?]*/g, (match) => {
+      const lower = match.toLowerCase();
+      if (lower.includes("alam") || lower.includes("salam")) {
+        return "আসসালামু আলাইকুম! ";
+      }
+      return match;
+    });
+
     reply = reply.trim();
 
     if (suggestions.length === 0) {
