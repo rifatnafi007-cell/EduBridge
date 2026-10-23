@@ -62,7 +62,7 @@ type AdminReview = {
 
 const RATING_TABS = ["all", "5", "4", "3", "2", "1"] as const;
 
-export function AdminReviews() {
+function AdminReviews() {
   const queryClient = useQueryClient();
   const [ratingTab, setRatingTab] = useState<string>("all");
   const [q, setQ] = useState("");

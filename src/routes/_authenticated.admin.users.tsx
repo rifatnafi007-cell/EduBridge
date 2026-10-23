@@ -88,7 +88,7 @@ const ROLE_LABELS: Record<JoinedUser["role"], string> = {
   unassigned: "Unassigned",
 };
 
-export function AdminUsers() {
+function AdminUsers() {
   const { user: currentAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");

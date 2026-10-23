@@ -71,7 +71,7 @@ const STATUS_COLORS = {
   cancelled: "#64748b", // slate
 } as const;
 
-export function AdminDashboard() {
+function AdminDashboard() {
   const queryClient = useQueryClient();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 

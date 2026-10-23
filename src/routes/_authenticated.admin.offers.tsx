@@ -52,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/admin/offers")({
 
 const TABS = ["all", "pending", "accepted", "rejected", "cancelled"] as const;
 
-export function AdminOffers() {
+function AdminOffers() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<string>("all");
   const [q, setQ] = useState("");
