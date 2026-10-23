@@ -452,14 +452,10 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       },
     };
 
-    // 5. Try official fast Gemini models in priority order
-    // Note: Gemini rate limits / quotas on Google AI Studio are per-model!
+    // 5. Single ultra-fast primary model: gemini-3.5-flash-lite
+    // Using a single focused model eliminates cascading timeout latency entirely!
     const modelsToTry = [
       "gemini-3.5-flash-lite",
-      "gemini-flash-lite-latest",
-      "gemini-3.5-flash",
-      "gemini-3.1-flash-lite",
-      "gemini-flash-latest",
     ];
 
     let res: Response | null = null;
@@ -468,7 +464,7 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
 
     for (const model of modelsToTry) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8500);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       try {
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
