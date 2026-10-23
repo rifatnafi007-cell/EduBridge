@@ -170,16 +170,15 @@ DO NOT include markdown code fences or backticks. Return RAW JSON ONLY.`;
 
   try {
     const modelsToTry = [
-      "gemini-3.5-flash-lite",
-      "gemini-3.5-flash",
-      "gemini-3.8-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
     ];
 
     let response: Response | null = null;
     for (const model of modelsToTry) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const timeoutId = setTimeout(() => controller.abort(), 4500);
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         const res = await fetch(endpoint, {

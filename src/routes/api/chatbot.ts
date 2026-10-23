@@ -21,8 +21,13 @@ export const Route = createFileRoute("/api/chatbot")({
 
           const runtimeKey =
             context?.cloudflare?.env?.GEMINI_API_KEY ||
+            context?.cloudflare?.env?.VITE_GEMINI_API_KEY ||
             context?.env?.GEMINI_API_KEY ||
-            (request as any)?.cf?.env?.GEMINI_API_KEY;
+            context?.env?.VITE_GEMINI_API_KEY ||
+            (request as any)?.cf?.env?.GEMINI_API_KEY ||
+            (request as any)?.cloudflare?.env?.GEMINI_API_KEY ||
+            (request as any)?.env?.GEMINI_API_KEY ||
+            (request as any)?.env?.VITE_GEMINI_API_KEY;
 
           const result = await handleChatbotRequest(userMessage, body.history || [], runtimeKey);
           return Response.json(result);

@@ -51,10 +51,10 @@ async function fetchTutorsContext(): Promise<TutorRecord[]> {
       .select("id, full_name, subjects, hourly_rate, avg_rating, total_reviews, experience_years, bio, qualifications")
       .eq("is_active", true)
       .order("avg_rating", { ascending: false })
-      .limit(20);
+      .limit(10);
 
     const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
-      setTimeout(() => resolve({ data: null, error: { message: "Supabase timeout" } }), 3000),
+      setTimeout(() => resolve({ data: null, error: { message: "Supabase timeout" } }), 1500),
     );
 
     const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
@@ -383,18 +383,16 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       },
     };
 
-    // 5. Try high-performance Gemini models with aggressive per-model timeouts (5s)
-    // gemini-3.5-flash-lite responds in ~900ms; gemini-3.5-flash in ~1.7s
+    // 5. Try official ultra-fast Gemini models (gemini-2.0-flash responds in ~500ms-1s)
     const modelsToTry = [
-      "gemini-3.5-flash-lite",
-      "gemini-3.5-flash",
-      "gemini-3.8-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
     ];
 
     let res: Response | null = null;
     for (const model of modelsToTry) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       try {
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -411,7 +409,8 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
           res = response;
           break;
         } else {
-          console.warn(`[Gemini model ${model} status: ${response.status}]`);
+          const errText = await response.text().catch(() => "");
+          console.warn(`[Gemini model ${model} status: ${response.status}]`, errText.slice(0, 150));
         }
       } catch (err) {
         clearTimeout(timeoutId);

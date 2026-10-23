@@ -369,7 +369,7 @@ export function ChatWidget() {
     setSending(true);
 
     const abortController = new AbortController();
-    const clientTimeoutId = setTimeout(() => abortController.abort(), 15000);
+    const clientTimeoutId = setTimeout(() => abortController.abort(), 25000);
 
     try {
       const historyPayload = updatedMessages.map((m) => ({
