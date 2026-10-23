@@ -54,23 +54,41 @@ async function fetchTutorsContext(): Promise<TutorRecord[]> {
       .limit(10);
 
     const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) =>
-      setTimeout(() => resolve({ data: null, error: { message: "Supabase timeout" } }), 1500),
+      setTimeout(() => resolve({ data: null, error: { message: "Supabase timeout" } }), 1800),
     );
 
     const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
-    if (error || !data) {
-      console.warn("[Chatbot] Could not load tutors context:", error?.message);
-      return cachedTutors ?? [];
+    if (!error && data && data.length > 0) {
+      cachedTutors = data as TutorRecord[];
+      lastCacheTimestamp = now;
+      return cachedTutors;
     }
-
-    cachedTutors = data as TutorRecord[];
-    lastCacheTimestamp = now;
-    return cachedTutors;
   } catch (err) {
-    console.warn("[Chatbot] Error querying tutors:", err);
-    return cachedTutors ?? [];
+    console.warn("[Chatbot] Error querying tutors via supabase-js, attempting direct REST:", err);
   }
+
+  // Backup direct REST query to Supabase (works 100% across Cloudflare edge, Node, SSR)
+  try {
+    const directRes = await fetch(
+      "https://whwmwncpomqbvugbmafx.supabase.co/rest/v1/public_tutors?select=id,full_name,subjects,hourly_rate,avg_rating,total_reviews,experience_years,bio,qualifications&is_active=eq.true&order=avg_rating.desc&limit=10",
+      {
+        headers: { apikey: "sb_publishable__HJx4XAiU9uefVBAh1vazg_ajH2ltMh" },
+      },
+    );
+    if (directRes.ok) {
+      const records = (await directRes.json()) as TutorRecord[];
+      if (Array.isArray(records) && records.length > 0) {
+        cachedTutors = records;
+        lastCacheTimestamp = now;
+        return cachedTutors;
+      }
+    }
+  } catch (directErr) {
+    console.warn("[Chatbot] Direct REST fallback failed:", directErr);
+  }
+
+  return cachedTutors ?? [];
 }
 
 /**
@@ -120,15 +138,29 @@ function checkFastPathGreeting(userQuery: string): ChatbotResponse | null {
  * Intelligent fallback when GEMINI_API_KEY is not configured or network fails.
  * Grounded directly in live Supabase database data!
  */
+const SUBJECT_SYNONYMS: Record<string, string[]> = {
+  Math: ["math", "mathematics", "gonit", "গণিত", "higher math", "algebra", "calculus"],
+  Physics: ["physics", "podartho", "পদার্থ", "fizix"],
+  Chemistry: ["chemistry", "rosayon", "রসায়ন", "chem"],
+  Biology: ["biology", "jibon", "জীববিজ্ঞান", "bio"],
+  English: ["english", "ingreji", "ইংরেজি", "eng"],
+  Bangla: ["bangla", "bengali", "বাংলা"],
+  ICT: ["ict", "computer", "programming", "coding", "তথ্য ও যোগাযোগ প্রযুক্তি"],
+  Science: ["science", "biggan", "বিজ্ঞান", "general science"],
+  Economics: ["economics", "orthoniti", "অর্থনীতি"],
+  Accounting: ["accounting", "hishab", "হিসাববিজ্ঞান"],
+  Arabic: ["arabic", "arbi", "আরবি"],
+};
+
 function generateFallbackResponse(
   userQuery: string,
   tutors: TutorRecord[],
   hasApiKey: boolean,
 ): ChatbotResponse {
-  const query = userQuery.toLowerCase();
+  const query = userQuery.toLowerCase().trim();
 
   const keyBanner = !hasApiKey
-    ? "\n\n---\n*💡 Note: Running in database-grounded mode. Add `GEMINI_API_KEY` to your `.env` to enable full Google Gemini LLM reasoning! (Free at [Google AI Studio](https://aistudio.google.com))*"
+    ? "\n\n---\n*💡 Note: Running in database-grounded mode. Add `GEMINI_API_KEY` to your environment to enable full Google Gemini LLM reasoning! (Free at [Google AI Studio](https://aistudio.google.com))*"
     : "";
 
   // 1. Booking / Offer flow questions
@@ -170,38 +202,70 @@ function generateFallbackResponse(
     };
   }
 
-  // 3. Subject-based searches (Math, Physics, English, etc.)
-  const matchedTutorsBySubject = tutors.filter((t) =>
-    (t.subjects || []).some((s) => query.includes(s.toLowerCase())),
-  );
+  // 3. Subject-based searches (with Bengali & English synonyms)
+  let searchedSubject: string | null = null;
+  for (const [canonicalSubject, synonyms] of Object.entries(SUBJECT_SYNONYMS)) {
+    if (synonyms.some((syn) => query.includes(syn))) {
+      searchedSubject = canonicalSubject;
+      break;
+    }
+  }
 
-  if (matchedTutorsBySubject.length > 0) {
-    const list = matchedTutorsBySubject
-      .slice(0, 4)
-      .map(
-        (t) =>
-          `• **[${t.full_name || "Verified Tutor"}](/student/tutor/${t.id})**\n` +
-          `  - Subjects: ${(t.subjects || []).join(", ")}\n` +
-          `  - Rate: ৳${t.hourly_rate ?? 0}/session | Rating: ⭐ ${t.avg_rating ?? "New"} (${t.total_reviews ?? 0} reviews)\n` +
-          `  - ${t.bio ? t.bio.slice(0, 90) + "..." : "Experienced verified educator."}`,
-      )
-      .join("\n\n");
+  if (searchedSubject) {
+    const matchedTutors = tutors.filter((t) => {
+      const subs = (t.subjects || []).map((s) => s.toLowerCase());
+      if (searchedSubject === "Science") {
+        return subs.some((s) => s.includes("science") || s.includes("biology") || s.includes("physics") || s.includes("chemistry"));
+      }
+      return subs.some((s) => s.includes(searchedSubject!.toLowerCase()));
+    });
 
-    return {
-      reply:
-        `Here are the matching tutors found in our database:\n\n${list}\n\n` +
-        `Click any tutor's name to view their full profile and schedule slots!` +
-        keyBanner,
-      suggestions: [
-        "💰 Affordable tutors (< ৳1000/hr)",
-        "📅 How do booking offers work?",
-        "🔎 Search all tutors",
-      ],
-    };
+    if (matchedTutors.length > 0) {
+      const list = matchedTutors
+        .slice(0, 4)
+        .map(
+          (t) =>
+            `• **[${t.full_name || "Verified Tutor"}](/student/tutor/${t.id})**\n` +
+            `  - Subjects: ${(t.subjects || []).join(", ")}\n` +
+            `  - Rate: ৳${t.hourly_rate ?? 0}/session | Rating: ⭐ ${t.avg_rating ?? "New"} (${t.total_reviews ?? 0} reviews)\n` +
+            `  - ${t.bio ? t.bio.slice(0, 90) + "..." : "Experienced verified educator."}`,
+        )
+        .join("\n\n");
+
+      return {
+        reply:
+          `Here are our available tutors teaching **${searchedSubject}**:\n\n${list}\n\n` +
+          `Click any tutor's name to view their full profile and book schedule slots!` +
+          keyBanner,
+        suggestions: [
+          `🎓 More tutors for ${searchedSubject}`,
+          "💰 Affordable tutors (< ৳1000/hr)",
+          "🔎 Search all tutors",
+        ],
+      };
+    } else {
+      // Requested subject has no tutors currently in the DB
+      const generalTop = tutors.slice(0, 3).map(
+        (t) => `• **[${t.full_name || "Verified Tutor"}](/student/tutor/${t.id})** (${(t.subjects || []).join(", ")}) — ৳${t.hourly_rate ?? 0}/session`,
+      ).join("\n");
+
+      return {
+        reply:
+          `Currently, we do not have an active tutor specifically for **${searchedSubject}** listed in our database yet.\n\n` +
+          `Here are some of our top verified tutors for other subjects:\n\n${generalTop}\n\n` +
+          `You can also browse all tutors or check back soon on the [Search Page](/student/search).` +
+          keyBanner,
+        suggestions: [
+          "🎓 Find Math tutors",
+          "🔬 Find Science tutors",
+          "🔎 Browse all tutors",
+        ],
+      };
+    }
   }
 
   // 4. Affordable / Cheap / Price queries
-  if (query.includes("cheap") || query.includes("afford") || query.includes("low") || query.includes("price") || query.includes("cost") || query.includes("rate")) {
+  if (query.includes("cheap") || query.includes("afford") || query.includes("low") || query.includes("price") || query.includes("cost") || query.includes("rate") || query.includes("kom") || query.includes("shosta")) {
     const sorted = [...tutors].sort((a, b) => (a.hourly_rate ?? 9999) - (b.hourly_rate ?? 9999));
     const list = sorted
       .slice(0, 4)
@@ -383,16 +447,23 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       },
     };
 
-    // 5. Try official ultra-fast Gemini models (gemini-2.0-flash responds in ~500ms-1s)
+    // 5. Try official fast Gemini models in priority order
+    // Note: Gemini rate limits / quotas on Google AI Studio are per-model!
     const modelsToTry = [
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-flash-lite-latest",
+      "gemini-3.5-flash",
+      "gemini-3.1-flash-lite",
+      "gemini-flash-latest",
     ];
 
     let res: Response | null = null;
+    let allQuotaExceeded = true;
+    let lastErrorDetails = "";
+
     for (const model of modelsToTry) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       try {
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -407,20 +478,36 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
 
         if (response.ok) {
           res = response;
+          allQuotaExceeded = false;
           break;
         } else {
           const errText = await response.text().catch(() => "");
           console.warn(`[Gemini model ${model} status: ${response.status}]`, errText.slice(0, 150));
+          if (response.status === 429) {
+            console.warn(`[Gemini model ${model}] Quota exceeded for this specific model. Trying next model...`);
+          } else {
+            allQuotaExceeded = false;
+          }
+          lastErrorDetails = `HTTP ${response.status} on ${model}`;
         }
-      } catch (err) {
+      } catch (err: any) {
         clearTimeout(timeoutId);
-        console.warn(`[Gemini model ${model} fetch error]`, err);
+        allQuotaExceeded = false;
+        lastErrorDetails = `Network error on ${model}: ${err?.message || err}`;
+        console.warn(`[Gemini model ${model} fetch error]`, err?.message || err);
       }
     }
 
     if (!res || !res.ok) {
-      console.error("[All Gemini models failed or returned non-ok]");
-      return generateFallbackResponse(message, tutors, true);
+      console.warn("[All Gemini models failed or quota exceeded]:", lastErrorDetails);
+      const fallback = generateFallbackResponse(message, tutors, true);
+      const note = allQuotaExceeded
+        ? "\n\n---\n*💡 Note: Your Google Gemini API key has exceeded its free request quota (HTTP 429) across all models. Create a fresh free API key at [Google AI Studio](https://aistudio.google.com) and update your `GEMINI_API_KEY` to restore full AI reasoning.*"
+        : "";
+      return {
+        ...fallback,
+        reply: fallback.reply + note,
+      };
     }
 
     const data = (await res.json()) as {

@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/chatbot")({
 
           const result = await handleChatbotRequest(userMessage, body.history || [], runtimeKey);
           return Response.json(result);
-        } catch (error) {
+        } catch (error: any) {
           console.error("[api/chatbot error]", error);
           return Response.json(
             {
