@@ -353,6 +353,35 @@ function getGeminiApiKey(customApiKey?: string): string | undefined {
 }
 
 /**
+ * Detect language intent from user input to enforce strict language adherence.
+ */
+function detectLanguageDirective(query: string): string {
+  if (/[\u0980-\u09FF]/.test(query)) {
+    return "[MANDATORY LANGUAGE DIRECTIVE: User query is in Bengali script. Reply 100% in natural Bengali (বাংলা হরফে). ABSOLUTELY NO Arabic script under any circumstances.]";
+  }
+
+  const lower = query.toLowerCase();
+  const banglishTokens = [
+    "er", "valo", "bhalo", "kono", "ache", "ase", "kivabe", "lagbe", "koto",
+    "korbo", "chai", "hobe", "ki", "keno", "kemon", "amar", "apnar", "amader",
+    "ekjon", "porate", "porbo", "shikhte", "bujhte", "jani", "dekhao", "dao",
+    "bolo", "bolen", "thake", "khujchi", "khujte", "shosta", "kom", "achi", "lagle",
+    "tutor", "teacher"
+  ];
+
+  const words = lower.split(/[^a-z0-9]+/);
+  const hasBanglishWord = words.some((w) =>
+    ["er", "valo", "bhalo", "kono", "ache", "ase", "kivabe", "lagbe", "koto", "korbo", "chai", "hobe", "ki", "keno", "kemon", "amar", "apnar", "ekjon", "dao", "bolo", "khujchi", "kom", "shosta"].includes(w)
+  );
+
+  if (hasBanglishWord) {
+    return "[MANDATORY LANGUAGE DIRECTIVE: User query is in Banglish (Bengali written with English/Latin letters). Reply 100% in natural Bengali (বাংলা হরফে). ABSOLUTELY NO Arabic script under any circumstances.]";
+  }
+
+  return "[MANDATORY LANGUAGE DIRECTIVE: User query is in English. Reply 100% in pure English only. Do NOT use Bengali or Arabic.]";
+}
+
+/**
  * Handle incoming chat requests using Google Gemini API with Supabase database grounding.
  */
 export async function handleChatbotRequest(
@@ -399,19 +428,21 @@ Key Platform Features:
 Current Live Database of Active Tutors:
 ${tutorsSummary}
 
-Guidelines for Responses:
-- Language Matching: If the user asks in Bengali or Banglish (e.g., "Math er valo kon teacher ache"), reply warmly in natural, polite Bengali. If they ask in English, reply in English.
-- Links & URLs:
-  * When recommending a tutor, format their profile link as: [View <Name>'s Profile](/student/tutor/<Tutor_ID>)
-  * When referring to search, format as: [Browse All Tutors](/student/search)
-  * When referring to offers, format as: [My Offers](/student/offers)
-  * NEVER nest markdown links (e.g., NEVER write [Label]([Inner](url))). ALWAYS use clean [Label](url) with relative paths starting with '/'.
-  * NEVER include domain names (like localhost, edubridge.com, or https://...pages.dev) in links or text.
-- Keep your answers concise, structured (bullet points), polite, and educational.
-- Do not make up fake tutors not present in the database.
-- Branding Rule: NEVER write "powered by Google Gemini" or mention Google Gemini in your answers, as this is already displayed in the UI header ribbon.
-- Bengali Greetings: When greeting in Bengali, ALWAYS write the proper Bengali script "আসসালামু আলাইকুম!" (do NOT write broken mixed-script hybrids like "আসalamualaykum").
-- At the very end of your response, on a new line, always provide 3 relevant follow-up questions formatted exactly as:
+CRITICAL LANGUAGE & OUTPUT RULES (HARD-CORE ENFORCEMENT):
+1. PURE ENGLISH: If the user query is written in English, you MUST reply 100% in pure English only. Do NOT include any Bengali words or Arabic script.
+2. BANGLISH & BENGALI: If the user query is written in Banglish (Bengali words written with English letters) OR in Bengali script, you MUST reply 100% in natural, polite Bengali (বাংলা লিপিতে). NEVER reply in English and NEVER use Arabic script.
+3. ABSOLUTE BAN ON ARABIC SCRIPT: Under NO circumstance should your response contain Arabic script (such as وعليكم السلام or السلام عليكم or any Arabic unicode characters).
+   * For Bengali greetings, write ONLY the authentic Bengali spelling: "আসসালামু আলাইকুম!".
+   * For English greetings, write "Hello!" or "Assalamu Alaikum!".
+4. BRAND NAME CLEANLINESS: Always write "EduBridge" cleanly once. NEVER duplicate or stutter like "EduBridge-Edubridge" or "EduBridge-EduBridge".
+5. RELATIVE URLS ONLY:
+   * When recommending a tutor, format link strictly as: [View <Name>'s Profile](/student/tutor/<Tutor_ID>)
+   * When referring to search, format strictly as: [Browse All Tutors](/student/search)
+   * When referring to offers, format strictly as: [My Offers](/student/offers)
+   * NEVER include domain names (such as localhost, edubridge.com, or https://...pages.dev) in any link or text.
+   * NEVER nest markdown links (e.g. NEVER [Label]([Inner](url))).
+6. Structure answers clearly with concise bullet points. Do not invent fake tutors.
+7. Suggestions: At the very end of your response, on a new line, always provide 3 relevant follow-up questions formatted exactly as:
 SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
 
   try {
@@ -431,11 +462,12 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       }
     }
 
+    const directive = detectLanguageDirective(message);
     const lastContent = contents[contents.length - 1];
     if (lastContent && lastContent.role === "user") {
-      lastContent.parts[0].text += `\n${message}`;
+      lastContent.parts[0].text += `\n${message}\n\n${directive}`;
     } else {
-      contents.push({ role: "user", parts: [{ text: message }] });
+      contents.push({ role: "user", parts: [{ text: `${message}\n\n${directive}` }] });
     }
 
     const payload = {
@@ -445,10 +477,7 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
       contents,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 800,
-        thinkingConfig: {
-          thinkingBudget: 100,
-        },
+        maxOutputTokens: 1200,
       },
     };
 
@@ -564,20 +593,31 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
     // Clean up any accidental nested markdown links: e.g. [Label]([Inner](url)) -> [Label](url)
     reply = reply.replace(/\[([^\]]+)\]\(\[?[^\]\)]*?(\/student\/[^)\s]+)\)?\)/g, "[$1]($2)");
 
-    // Clean up any domain prefixes for internal app routes (e.g. http://localhost:8080/student/... -> /student/...)
+    // Clean up any domain prefixes for internal app routes (e.g. https://...pages.dev/student/... -> /student/...)
     reply = reply.replace(/\[([^\]]+)\]\(https?:\/\/[^\/]+(\/student\/[^)]+)\)/g, "[$1]($2)");
+    reply = reply.replace(/https?:\/\/[a-zA-Z0-9_\-\.]+\.pages\.dev(\/student\/[^\s\)\],]+)/g, "$1");
+    reply = reply.replace(/http:\/\/localhost:[0-9]+(\/student\/[^\s\)\],]+)/g, "$1");
 
     // Clean outer or stray trailing parentheses: ([Label](url)) -> [Label](url)
     reply = reply.replace(/\(\s*(\[[^\]]+\]\([^)]+\))\s*\)/g, "$1");
     reply = reply.replace(/(\[[^\]]+\]\([^)]+\))\s*\)+/g, "$1");
 
-    // Strip redundant "powered by Google Gemini" / "powered by Gemini" from response text
+    // 1. Strip ALL Arabic script / characters (e.g. وعليكم السلام or any Arabic Unicode block)
+    reply = reply.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+/g, "");
+
+    // 2. Fix duplicated brand names like "EduBridge-Edubridge" or "EduBridge-EduBridge"
+    reply = reply.replace(/EduBridge[-–\s]+Edubridge/gi, "EduBridge");
+
+    // 3. Clean leading leftover punctuation or whitespace from stripped Arabic
+    reply = reply.replace(/^[!\s,।\-]+/, "");
+
+    // 4. Strip redundant "powered by Google Gemini" / "powered by Gemini" from response text
     reply = reply.replace(/,?\s*powered by Google Gemini\.?/gi, "");
     reply = reply.replace(/,?\s*powered by Gemini\.?/gi, "");
     reply = reply.replace(/\(powered by Google Gemini\)/gi, "");
     reply = reply.replace(/\(powered by Gemini\)/gi, "");
 
-    // Fix broken mixed-script greetings e.g. "আসalamualaykum" or "আসalamualikum" -> "আসসালামু আলাইকুম!"
+    // 5. Fix broken mixed-script greetings e.g. "আসalamualaykum" or "আসalamualikum" -> "আসসালামু আলাইকুম!"
     reply = reply.replace(/আস[a-zA-Z\s,!?]*/g, (match) => {
       const lower = match.toLowerCase();
       if (lower.includes("alam") || lower.includes("salam")) {
