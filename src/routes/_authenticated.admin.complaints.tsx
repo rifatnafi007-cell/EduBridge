@@ -186,10 +186,10 @@ function AdminComplaints() {
 
       {/* Tabs and Search Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="flex flex-wrap h-auto">
+        <Tabs value={tab} onValueChange={setTab} className="w-full sm:w-auto">
+          <TabsList className="w-full sm:w-auto flex justify-start overflow-x-auto no-scrollbar p-1 gap-1 h-auto">
             {TABS.map((t) => (
-              <TabsTrigger key={t} value={t} className="capitalize gap-1.5">
+              <TabsTrigger key={t} value={t} className="shrink-0 capitalize gap-1.5">
                 {t.replace("_", " ")}
                 <span className="rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold">
                   {counts[t]}

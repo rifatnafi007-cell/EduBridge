@@ -54,11 +54,11 @@ export function Navbar() {
 
   const links = role ? NAV[role] : [];
   const profilePath =
-    role === "tutor"
+    role === "admin"
+      ? "/admin/profile"
+      : role === "tutor"
       ? "/tutor/profile"
-      : role === "student"
-      ? "/student/profile"
-      : "/admin/profile";
+      : "/student/profile";
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -102,7 +102,12 @@ export function Navbar() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-2rem))] max-w-[90vw]">
+            <DropdownMenuContent
+              align="end"
+              sideOffset={8}
+              collisionPadding={16}
+              className="w-[calc(100vw-2rem)] sm:w-80 max-w-[calc(100vw-2rem)] sm:max-w-sm shadow-lg"
+            >
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {notifications.length === 0 && (
@@ -121,10 +126,15 @@ export function Navbar() {
                   <p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
                 </button>
               ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/notifications">View all notifications</Link>
-              </DropdownMenuItem>
+              <div className="p-2 border-t border-border">
+                <Button
+                  size="sm"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-xs"
+                  asChild
+                >
+                  <Link to="/notifications">View all notifications</Link>
+                </Button>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -134,7 +144,12 @@ export function Navbar() {
                 <UserAvatar name={profile?.full_name ?? "User"} path={profile?.avatar_url} className="h-9 w-9" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent
+              align="end"
+              sideOffset={8}
+              collisionPadding={16}
+              className="w-56"
+            >
               <DropdownMenuLabel>
                 <span className="block truncate">{profile?.full_name || "Account"}</span>
                 <span className="block text-xs font-normal capitalize text-muted-foreground">{role}</span>
@@ -160,7 +175,7 @@ export function Navbar() {
             <SheetContent side="right" className="w-[min(18rem,85vw)] sm:w-80 flex flex-col justify-between p-5">
               <div className="space-y-4">
                 <div className="flex items-center gap-3 pb-3 border-b border-border">
-                  <UserAvatar name={profile?.full_name ?? "User"} path={profile?.avatar_url} className="h-10 w-10 ring-2 ring-primary/20" />
+                  <UserAvatar name={profile?.full_name ?? "User"} path={profile?.avatar_url} className="h-10 w-10 ring-2 ring-primary/20" previewable />
                   <div className="min-w-0 flex-1">
                     <SheetTitle className="text-sm font-semibold truncate text-foreground">{profile?.full_name || "Account"}</SheetTitle>
                     <p className="text-xs text-muted-foreground capitalize">{role ? `${role} portal` : "Student"}</p>

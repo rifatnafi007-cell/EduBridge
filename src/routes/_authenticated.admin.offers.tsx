@@ -165,10 +165,10 @@ export function AdminOffers() {
 
       {/* Tabs and Search */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="flex flex-wrap h-auto">
+        <Tabs value={tab} onValueChange={setTab} className="w-full sm:w-auto">
+          <TabsList className="w-full sm:w-auto flex justify-start overflow-x-auto no-scrollbar p-1 gap-1 h-auto">
             {TABS.map((t) => (
-              <TabsTrigger key={t} value={t} className="capitalize gap-1.5">
+              <TabsTrigger key={t} value={t} className="shrink-0 capitalize gap-1.5">
                 {t}
                 <span className="rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold">
                   {counts[t]}
@@ -195,81 +195,155 @@ export function AdminOffers() {
       ) : filteredOffers.length === 0 ? (
         <EmptyState icon={Inbox} title="No offers found" description="Nothing matches this filter or search." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Tutor</TableHead>
-                <TableHead>Schedule Slots</TableHead>
-                <TableHead>Total Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOffers.map((o) => (
-                <TableRow key={o.id} className="hover:bg-accent/40">
-                  <TableCell>
-                    <div className="flex items-center gap-2.5">
-                      <UserAvatar
-                        name={o.profiles?.full_name ?? "Student"}
-                        path={o.profiles?.avatar_url}
-                        className="h-8 w-8 text-xs"
-                      />
-                      <div>
-                        <p className="font-medium text-foreground">{o.profiles?.full_name ?? "—"}</p>
-                        <span className="inline-flex items-center rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                          Offer #{o.id.slice(0, 8)}
-                        </span>
-                      </div>
+        <>
+          {/* Mobile Card List (< sm) */}
+          <div className="space-y-3 sm:hidden">
+            {filteredOffers.map((o) => (
+              <div
+                key={o.id}
+                className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <UserAvatar
+                      name={o.profiles?.full_name ?? "Student"}
+                      path={o.profiles?.avatar_url}
+                      className="h-9 w-9 shrink-0 text-xs"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-foreground truncate">
+                        {o.profiles?.full_name ?? "—"}
+                      </p>
+                      <span className="inline-flex items-center rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                        Offer #{o.id.slice(0, 8)}
+                      </span>
                     </div>
-                  </TableCell>
+                  </div>
+                  <StatusBadge status={o.status} />
+                </div>
 
-                  <TableCell>
-                    <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-muted/30 p-2.5 space-y-2 text-xs border border-border/40">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Tutor:</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <UserAvatar
                         name={o.tutor_profiles?.profiles?.full_name ?? "Tutor"}
                         path={o.tutor_profiles?.profiles?.avatar_url}
-                        className="h-8 w-8 text-xs"
+                        className="h-5 w-5 shrink-0 text-[10px]"
                       />
-                      <span className="text-sm font-medium text-foreground">
+                      <span className="font-medium text-foreground truncate max-w-[160px]">
                         {o.tutor_profiles?.profiles?.full_name ?? "—"}
                       </span>
                     </div>
-                  </TableCell>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Schedule:</span>
+                    <span className="inline-flex items-center gap-1 text-foreground font-medium">
+                      <Clock className="h-3 w-3 text-primary" />
+                      {o.offer_slots.length} weekly slot{o.offer_slots.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Total:</span>
+                    <span className="font-bold text-foreground text-sm">
+                      {formatTaka(o.total_amount)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40 text-[11px] text-muted-foreground">
+                    <span>Submitted:</span>
+                    <span>{formatDate(o.created_at)}</span>
+                  </div>
+                </div>
 
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5 text-primary" />
-                      <span>{o.offer_slots.length} weekly slot{o.offer_slots.length === 1 ? "" : "s"}</span>
-                    </div>
-                  </TableCell>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full h-8 text-xs gap-1.5 font-medium"
+                  onClick={() => setSelectedOffer(o)}
+                >
+                  <Eye className="h-3.5 w-3.5" /> Inspect Offer
+                </Button>
+              </div>
+            ))}
+          </div>
 
-                  <TableCell className="font-semibold text-foreground">{formatTaka(o.total_amount)}</TableCell>
-
-                  <TableCell>
-                    <StatusBadge status={o.status} />
-                  </TableCell>
-
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(o.created_at)}</TableCell>
-
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1 text-xs"
-                      onClick={() => setSelectedOffer(o)}
-                    >
-                      <Eye className="h-3.5 w-3.5" /> Inspect
-                    </Button>
-                  </TableCell>
+          {/* Desktop / Tablet Scrollable Table (>= sm) */}
+          <div className="hidden sm:block overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+            <Table className="min-w-[680px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Tutor</TableHead>
+                  <TableHead>Schedule Slots</TableHead>
+                  <TableHead>Total Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filteredOffers.map((o) => (
+                  <TableRow key={o.id} className="hover:bg-accent/40">
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <UserAvatar
+                          name={o.profiles?.full_name ?? "Student"}
+                          path={o.profiles?.avatar_url}
+                          className="h-8 w-8 text-xs"
+                        />
+                        <div>
+                          <p className="font-medium text-foreground">{o.profiles?.full_name ?? "—"}</p>
+                          <span className="inline-flex items-center rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                            Offer #{o.id.slice(0, 8)}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <UserAvatar
+                          name={o.tutor_profiles?.profiles?.full_name ?? "Tutor"}
+                          path={o.tutor_profiles?.profiles?.avatar_url}
+                          className="h-8 w-8 text-xs"
+                        />
+                        <span className="text-sm font-medium text-foreground">
+                          {o.tutor_profiles?.profiles?.full_name ?? "—"}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5 text-primary" />
+                        <span>{o.offer_slots.length} weekly slot{o.offer_slots.length === 1 ? "" : "s"}</span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="font-semibold text-foreground">{formatTaka(o.total_amount)}</TableCell>
+
+                    <TableCell>
+                      <StatusBadge status={o.status} />
+                    </TableCell>
+
+                    <TableCell className="text-xs text-muted-foreground">{formatDate(o.created_at)}</TableCell>
+
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 text-xs"
+                        onClick={() => setSelectedOffer(o)}
+                      >
+                        <Eye className="h-3.5 w-3.5" /> Inspect
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* Offer Inspection Modal */}

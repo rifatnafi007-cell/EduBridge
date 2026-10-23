@@ -8,12 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
 
 interface ProfileFormProps {
   hideAcademicFields?: boolean;
+  className?: string;
 }
 
-export function ProfileForm({ hideAcademicFields = false }: ProfileFormProps = {}) {
+export function ProfileForm({ hideAcademicFields = false, className }: ProfileFormProps = {}) {
   const { role, user, profile, refresh } = useAuth();
   const showAcademicFields = !hideAcademicFields && role !== "admin";
   const fileRef = useRef<HTMLInputElement>(null);
@@ -67,9 +69,10 @@ export function ProfileForm({ hideAcademicFields = false }: ProfileFormProps = {
       }
       refresh();
       toast.success("Profile updated successfully.");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSaving(false);
-      toast.error(err.message || "Failed to update profile.");
+      const message = err instanceof Error ? err.message : "Failed to update profile.";
+      toast.error(message);
     }
   }
 
@@ -95,15 +98,18 @@ export function ProfileForm({ hideAcademicFields = false }: ProfileFormProps = {
   }
 
   return (
-    <form onSubmit={save} className="max-w-xl space-y-6 rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm">
+    <form
+      onSubmit={save}
+      className={cn("w-full max-w-xl space-y-6 rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm", className)}
+    >
       <div className="flex items-center gap-4">
-        <UserAvatar name={profile?.full_name ?? "User"} path={profile?.avatar_url} className="h-16 w-16" />
+        <UserAvatar name={profile?.full_name ?? "User"} path={profile?.avatar_url} className="h-16 w-16" previewable />
         <div>
           <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
             {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
             Change photo
           </Button>
-          <p className="mt-1 text-xs text-muted-foreground">JPG or PNG, up to 2MB.</p>
+          <p className="mt-1 text-xs text-muted-foreground">JPG or PNG, up to 2MB. Tap photo to preview.</p>
           <input
             ref={fileRef}
             type="file"

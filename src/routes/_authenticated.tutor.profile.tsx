@@ -19,16 +19,18 @@ export const Route = createFileRoute("/_authenticated/tutor/profile")({
 
 function TutorProfilePage() {
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 sm:space-y-10">
       <ProfileCompletionBanner />
       <ProfileGateCard />
-      <div>
-        <PageHeader title="Personal details" subtitle="Shown to students when they contact you." />
-        <ProfileForm />
-      </div>
-      <div>
-        <PageHeader title="Tutor listing" subtitle="What students see in search results." />
-        <TutorProfileForm />
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+        <section className="min-w-0">
+          <PageHeader title="Personal details" subtitle="Shown to students when they contact you." />
+          <ProfileForm className="max-w-none" />
+        </section>
+        <section className="min-w-0">
+          <PageHeader title="Tutor listing" subtitle="What students see in search results." />
+          <TutorProfileForm className="max-w-none" />
+        </section>
       </div>
     </div>
   );

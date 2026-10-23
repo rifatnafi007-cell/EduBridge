@@ -166,7 +166,7 @@ function TutorDetail() {
       <div className="space-y-6">
         <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm">
           <div className="flex flex-wrap items-start gap-4">
-            <UserAvatar name={name} path={tutor.profiles?.avatar_url} className="h-16 w-16" />
+            <UserAvatar name={name} path={tutor.profiles?.avatar_url} className="h-16 w-16" previewable />
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">{name}</h1>
               <RatingStars value={tutor.avg_rating} showValue count={tutor.total_reviews} className="mt-1" />

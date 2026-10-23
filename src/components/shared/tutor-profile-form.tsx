@@ -16,7 +16,13 @@ import { LEVELS, SUBJECTS } from "@/lib/edubridge";
 import { BANGLADESH_AREAS, getUserLocation } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
-export function TutorProfileForm({ redirectOnCreate = false }: { redirectOnCreate?: boolean }) {
+export function TutorProfileForm({
+  redirectOnCreate = false,
+  className,
+}: {
+  redirectOnCreate?: boolean;
+  className?: string;
+} = {}) {
   const { user, refresh } = useAuth();
   const navigate = useNavigate();
   const [bio, setBio] = useState("");
@@ -107,10 +113,13 @@ export function TutorProfileForm({ redirectOnCreate = false }: { redirectOnCreat
     if (!existing && redirectOnCreate) navigate({ to: "/tutor/availability" });
   }
 
-  if (isLoading) return <div className="h-40 animate-pulse rounded-xl bg-muted" />;
+  if (isLoading) return <div className={cn("h-40 animate-pulse rounded-xl bg-muted", className)} />;
 
   return (
-    <form onSubmit={save} className="max-w-2xl space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+    <form
+      onSubmit={save}
+      className={cn("w-full max-w-2xl space-y-6 rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm", className)}
+    >
       <div className="space-y-2">
         <Label htmlFor="bio">About you</Label>
         <Textarea
@@ -267,8 +276,9 @@ export function TutorProfileForm({ redirectOnCreate = false }: { redirectOnCreat
                   setLat(loc.lat);
                   setLng(loc.lng);
                   toast.success("GPS location detected successfully!");
-                } catch (err: any) {
-                  toast.error(err.message || "Failed to detect location");
+                } catch (err: unknown) {
+                  const message = err instanceof Error ? err.message : "Failed to detect location";
+                  toast.error(message);
                 } finally {
                   setDetectingLoc(false);
                 }

@@ -311,25 +311,25 @@ export function AdminDashboard() {
           title="Admin Dashboard"
           subtitle="Real-time platform metrics, revenue tracking, and moderation queues."
         />
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <Button variant="outline" size="sm" className="w-full justify-center sm:w-auto" asChild>
             <Link to="/admin/users">
-              <UserCheck className="mr-1.5 h-4 w-4" /> Manage Users
+              <UserCheck className="mr-1.5 h-4 w-4 shrink-0" /> Manage Users
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="w-full justify-center sm:w-auto" asChild>
             <Link to="/admin/offers">
-              <Inbox className="mr-1.5 h-4 w-4" /> All Offers
+              <Inbox className="mr-1.5 h-4 w-4 shrink-0" /> All Offers
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="w-full justify-center sm:w-auto" asChild>
             <Link to="/admin/reviews">
-              <Star className="mr-1.5 h-4 w-4 text-amber-500 fill-amber-500" /> Reviews ({data?.totalReviewsCount ?? 0})
+              <Star className="mr-1.5 h-4 w-4 shrink-0 text-amber-500 fill-amber-500" /> Reviews ({data?.totalReviewsCount ?? 0})
             </Link>
           </Button>
-          <Button size="sm" asChild>
+          <Button size="sm" className="w-full justify-center sm:w-auto" asChild>
             <Link to="/admin/complaints">
-              <ShieldAlert className="mr-1.5 h-4 w-4" /> Moderation Queue
+              <ShieldAlert className="mr-1.5 h-4 w-4 shrink-0" /> Moderation Queue
             </Link>
           </Button>
         </div>
@@ -341,9 +341,8 @@ export function AdminDashboard() {
           <Link
             key={kpi.label}
             to={kpi.to}
-            className={`group rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-primary/50 hover:shadow-md ${
-              kpi.highlight ? "border-rose-300 dark:border-rose-900/60" : "border-border"
-            }`}
+            className={`group rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-primary/50 hover:shadow-md ${kpi.highlight ? "border-rose-300 dark:border-rose-900/60" : "border-border"
+              }`}
           >
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
@@ -552,8 +551,8 @@ export function AdminDashboard() {
         </div>
 
         {/* Recent Tuition Offers Stream */}
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 sm:pb-4">
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Inbox className="h-4 w-4" />
@@ -578,57 +577,101 @@ export function AdminDashboard() {
                 <p className="text-xs text-muted-foreground">New tuition offers will appear here automatically.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Student</TableHead>
-                      <TableHead className="text-xs">Tutor</TableHead>
-                      <TableHead className="text-xs">Amount</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
-                      <TableHead className="text-right text-xs">Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data?.recentOffers.map((o) => (
-                      <TableRow key={o.id}>
-                        <TableCell className="py-2.5">
-                          <div className="flex items-center gap-2">
-                            <UserAvatar
-                              name={o.profiles?.full_name ?? "Student"}
-                              path={o.profiles?.avatar_url}
-                              className="h-6 w-6 text-[10px]"
-                            />
-                            <span className="truncate text-xs font-medium text-foreground">
+              <>
+                {/* Mobile View: High-density offer cards (< sm) */}
+                <div className="divide-y divide-border/60 sm:hidden">
+                  {data?.recentOffers.map((o) => (
+                    <div key={o.id} className="py-3.5 space-y-2.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <UserAvatar
+                            name={o.profiles?.full_name ?? "Student"}
+                            path={o.profiles?.avatar_url}
+                            className="h-8 w-8 text-xs shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-foreground truncate">
                               {o.profiles?.full_name ?? "—"}
-                            </span>
+                            </p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              Tutor: <span className="text-foreground/90 font-medium">{o.tutor_profiles?.profiles?.full_name ?? "—"}</span>
+                            </p>
                           </div>
-                        </TableCell>
-                        <TableCell className="py-2.5 text-xs text-muted-foreground">
-                          {o.tutor_profiles?.profiles?.full_name ?? "—"}
-                        </TableCell>
-                        <TableCell className="py-2.5 text-xs font-semibold text-foreground">
-                          {formatTaka(o.total_amount)}
-                        </TableCell>
-                        <TableCell className="py-2.5">
-                          <StatusBadge status={o.status} />
-                        </TableCell>
-                        <TableCell className="py-2.5 text-right text-xs text-muted-foreground">
-                          {formatDate(o.created_at)}
-                        </TableCell>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-bold text-foreground">
+                            {formatTaka(o.total_amount)}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {formatDate(o.created_at)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-0.5">
+                        <span className="inline-flex items-center rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                          Offer #{o.id.slice(0, 8)}
+                        </span>
+                        <StatusBadge status={o.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop / Tablet View: Full Table (sm and up) */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table className="min-w-[560px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Student</TableHead>
+                        <TableHead className="text-xs">Tutor</TableHead>
+                        <TableHead className="text-xs">Amount</TableHead>
+                        <TableHead className="text-xs">Status</TableHead>
+                        <TableHead className="text-right text-xs">Date</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {data?.recentOffers.map((o) => (
+                        <TableRow key={o.id}>
+                          <TableCell className="py-2.5">
+                            <div className="flex items-center gap-2">
+                              <UserAvatar
+                                name={o.profiles?.full_name ?? "Student"}
+                                path={o.profiles?.avatar_url}
+                                className="h-6 w-6 text-[10px]"
+                              />
+                              <span className="truncate text-xs font-medium text-foreground">
+                                {o.profiles?.full_name ?? "—"}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2.5 text-xs text-muted-foreground">
+                            {o.tutor_profiles?.profiles?.full_name ?? "—"}
+                          </TableCell>
+                          <TableCell className="py-2.5 text-xs font-semibold text-foreground">
+                            {formatTaka(o.total_amount)}
+                          </TableCell>
+                          <TableCell className="py-2.5">
+                            <StatusBadge status={o.status} />
+                          </TableCell>
+                          <TableCell className="py-2.5 text-right text-xs text-muted-foreground">
+                            {formatDate(o.created_at)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </div>
         </div>
       </div>
 
       {/* Recent Student Reviews & Ratings Feed */}
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex items-center justify-between border-b border-border pb-4">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 sm:pb-4">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
               <Star className="h-4 w-4 fill-amber-500" />

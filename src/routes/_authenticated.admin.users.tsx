@@ -265,9 +265,9 @@ export function AdminUsers() {
       setSelectedUser((prev) =>
         prev
           ? {
-              ...prev,
-              tutorProfile: { ...tutorProfile, is_active: newStatus },
-            }
+            ...prev,
+            tutorProfile: { ...tutorProfile, is_active: newStatus },
+          }
           : null,
       );
     }
@@ -288,10 +288,10 @@ export function AdminUsers() {
 
       {/* Tabs and Search Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={roleTab} onValueChange={setRoleTab}>
-          <TabsList>
+        <Tabs value={roleTab} onValueChange={setRoleTab} className="w-full sm:w-auto">
+          <TabsList className="w-full sm:w-auto flex justify-start overflow-x-auto no-scrollbar p-1 gap-1 h-auto">
             {ROLE_TABS.map((t) => (
-              <TabsTrigger key={t} value={t} className="capitalize gap-1.5">
+              <TabsTrigger key={t} value={t} className="shrink-0 capitalize gap-1.5">
                 {t === "all" ? "All Users" : `${t}s`}
                 <span className="rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold">
                   {counts[t]}
@@ -324,42 +324,33 @@ export function AdminUsers() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Area / Location</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((u) => {
-                const isTutor = u.role === "tutor" && u.tutorProfile;
-                const isTutorSuspended = isTutor && !u.tutorProfile?.is_active;
-                const isStudent = u.role === "student";
-                const isStudentSuspended = isStudent && Boolean(u.is_suspended);
+        <>
+          {/* Mobile User Cards (< sm) */}
+          <div className="space-y-3 sm:hidden">
+            {filteredUsers.map((u) => {
+              const isTutor = u.role === "tutor" && u.tutorProfile;
+              const isTutorSuspended = isTutor && !u.tutorProfile?.is_active;
+              const isStudent = u.role === "student";
+              const isStudentSuspended = isStudent && Boolean(u.is_suspended);
 
-                return (
-                  <TableRow key={u.id} className="hover:bg-accent/40">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <UserAvatar name={u.full_name} path={u.avatar_url} className="h-9 w-9" />
-                        <div>
-                          <p className="font-medium text-foreground">{u.full_name}</p>
-                          <p className="font-mono text-[11px] text-muted-foreground">{u.id.slice(0, 8)}...</p>
-                        </div>
+              return (
+                <div
+                  key={u.id}
+                  className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-3"
+                >
+                  {/* Top: Avatar, Name, ID, Badges */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <UserAvatar name={u.full_name} path={u.avatar_url} className="h-10 w-10 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-foreground truncate">{u.full_name}</p>
+                        <p className="font-mono text-[10px] text-muted-foreground">{u.id.slice(0, 8)}...</p>
                       </div>
-                    </TableCell>
-
-                    <TableCell>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
                       <Badge
                         variant="secondary"
-                        className={`capitalize ${
+                        className={`capitalize text-[10px] px-2 py-0.5 ${
                           u.role === "admin"
                             ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
                             : u.role === "tutor"
@@ -369,82 +360,217 @@ export function AdminUsers() {
                       >
                         {ROLE_LABELS[u.role] ?? u.role}
                       </Badge>
-                    </TableCell>
-
-                    <TableCell>
                       {isTutor ? (
                         isTutorSuspended ? (
-                          <Badge variant="outline" className="border-rose-400/40 bg-rose-500/10 text-rose-600 gap-1 text-[11px]">
-                            <XCircle className="h-3 w-3" /> Suspended
+                          <Badge variant="outline" className="border-rose-400/40 bg-rose-500/10 text-rose-600 gap-1 text-[10px] px-1.5 py-0">
+                            <XCircle className="h-2.5 w-2.5" /> Suspended
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/10 text-emerald-600 gap-1 text-[11px]">
-                            <CheckCircle2 className="h-3 w-3" /> Active
+                          <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/10 text-emerald-600 gap-1 text-[10px] px-1.5 py-0">
+                            <CheckCircle2 className="h-2.5 w-2.5" /> Active
                           </Badge>
                         )
                       ) : isStudent ? (
                         isStudentSuspended ? (
-                          <Badge variant="outline" className="border-rose-400/40 bg-rose-500/10 text-rose-600 gap-1 text-[11px]">
-                            <XCircle className="h-3 w-3" /> Suspended
+                          <Badge variant="outline" className="border-rose-400/40 bg-rose-500/10 text-rose-600 gap-1 text-[10px] px-1.5 py-0">
+                            <XCircle className="h-2.5 w-2.5" /> Suspended
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/10 text-emerald-600 gap-1 text-[11px]">
-                            <CheckCircle2 className="h-3 w-3" /> Active
+                          <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/10 text-emerald-600 gap-1 text-[10px] px-1.5 py-0">
+                            <CheckCircle2 className="h-2.5 w-2.5" /> Active
                           </Badge>
                         )
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Standard</span>
-                      )}
-                    </TableCell>
+                      ) : null}
+                    </div>
+                  </div>
 
-                    <TableCell className="text-xs text-muted-foreground">{u.phone ?? "—"}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
-                      {u.address ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(u.created_at)}</TableCell>
+                  {/* Info details */}
+                  <div className="rounded-lg bg-muted/30 p-2.5 space-y-1.5 text-xs border border-border/40">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <Phone className="h-3 w-3 text-muted-foreground" /> Phone:
+                      </span>
+                      <span className="font-medium text-foreground">{u.phone ?? "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <MapPin className="h-3 w-3 text-muted-foreground" /> Location:
+                      </span>
+                      <span className="font-medium text-foreground truncate max-w-[180px] text-right">
+                        {u.address ?? "—"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40 text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3 text-muted-foreground" /> Joined:
+                      </span>
+                      <span>{formatDate(u.created_at)}</span>
+                    </div>
+                  </div>
 
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 gap-1 text-xs"
-                          onClick={() => setSelectedUser(u)}
+                  {/* Actions Bar */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8 text-xs gap-1.5 font-medium"
+                      onClick={() => setSelectedUser(u)}
+                    >
+                      <Eye className="h-3.5 w-3.5" /> Details
+                    </Button>
+
+                    {isTutor && (
+                      <Button
+                        variant={isTutorSuspended ? "default" : "outline"}
+                        size="sm"
+                        className="flex-1 h-8 text-xs font-medium"
+                        disabled={updatingTutorId === u.tutorProfile?.id}
+                        onClick={() => u.tutorProfile && void toggleTutorStatus(u.tutorProfile)}
+                      >
+                        {isTutorSuspended ? "Reactivate" : "Suspend"}
+                      </Button>
+                    )}
+
+                    {isStudent && (
+                      <Button
+                        variant={isStudentSuspended ? "default" : "outline"}
+                        size="sm"
+                        className="flex-1 h-8 text-xs font-medium"
+                        disabled={updatingStudentId === u.id}
+                        onClick={() => void toggleStudentSuspension(u)}
+                      >
+                        {isStudentSuspended ? "Reactivate" : "Suspend"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table (>= sm) */}
+          <div className="hidden sm:block overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+            <Table className="min-w-[760px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Area / Location</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((u) => {
+                  const isTutor = u.role === "tutor" && u.tutorProfile;
+                  const isTutorSuspended = isTutor && !u.tutorProfile?.is_active;
+                  const isStudent = u.role === "student";
+                  const isStudentSuspended = isStudent && Boolean(u.is_suspended);
+
+                  return (
+                    <TableRow key={u.id} className="hover:bg-accent/40">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <UserAvatar name={u.full_name} path={u.avatar_url} className="h-9 w-9" />
+                          <div>
+                            <p className="font-medium text-foreground">{u.full_name}</p>
+                            <p className="font-mono text-[11px] text-muted-foreground">{u.id.slice(0, 8)}...</p>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={`capitalize ${
+                            u.role === "admin"
+                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+                              : u.role === "tutor"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                              : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                          }`}
                         >
-                          <Eye className="h-3.5 w-3.5" /> Details
-                        </Button>
+                          {ROLE_LABELS[u.role] ?? u.role}
+                        </Badge>
+                      </TableCell>
 
-                        {isTutor && (
-                          <Button
-                            variant={isTutorSuspended ? "default" : "outline"}
-                            size="sm"
-                            className="h-8 text-xs"
-                            disabled={updatingTutorId === u.tutorProfile?.id}
-                            onClick={() => u.tutorProfile && void toggleTutorStatus(u.tutorProfile)}
-                          >
-                            {isTutorSuspended ? "Reactivate" : "Suspend"}
-                          </Button>
+                      <TableCell>
+                        {isTutor ? (
+                          isTutorSuspended ? (
+                            <Badge variant="outline" className="border-rose-400/40 bg-rose-500/10 text-rose-600 gap-1 text-[11px]">
+                              <XCircle className="h-3 w-3" /> Suspended
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/10 text-emerald-600 gap-1 text-[11px]">
+                              <CheckCircle2 className="h-3 w-3" /> Active
+                            </Badge>
+                          )
+                        ) : isStudent ? (
+                          isStudentSuspended ? (
+                            <Badge variant="outline" className="border-rose-400/40 bg-rose-500/10 text-rose-600 gap-1 text-[11px]">
+                              <XCircle className="h-3 w-3" /> Suspended
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/10 text-emerald-600 gap-1 text-[11px]">
+                              <CheckCircle2 className="h-3 w-3" /> Active
+                            </Badge>
+                          )
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Standard</span>
                         )}
+                      </TableCell>
 
-                        {isStudent && (
+                      <TableCell className="text-xs text-muted-foreground">{u.phone ?? "—"}</TableCell>
+                      <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
+                        {u.address ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{formatDate(u.created_at)}</TableCell>
+
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <Button
-                            variant={isStudentSuspended ? "default" : "outline"}
+                            variant="ghost"
                             size="sm"
-                            className="h-8 text-xs"
-                            disabled={updatingStudentId === u.id}
-                            onClick={() => void toggleStudentSuspension(u)}
+                            className="h-8 gap-1 text-xs"
+                            onClick={() => setSelectedUser(u)}
                           >
-                            {isStudentSuspended ? "Reactivate" : "Suspend"}
+                            <Eye className="h-3.5 w-3.5" /> Details
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+
+                          {isTutor && (
+                            <Button
+                              variant={isTutorSuspended ? "default" : "outline"}
+                              size="sm"
+                              className="h-8 text-xs"
+                              disabled={updatingTutorId === u.tutorProfile?.id}
+                              onClick={() => u.tutorProfile && void toggleTutorStatus(u.tutorProfile)}
+                            >
+                              {isTutorSuspended ? "Reactivate" : "Suspend"}
+                            </Button>
+                          )}
+
+                          {isStudent && (
+                            <Button
+                              variant={isStudentSuspended ? "default" : "outline"}
+                              size="sm"
+                              className="h-8 text-xs"
+                              disabled={updatingStudentId === u.id}
+                              onClick={() => void toggleStudentSuspension(u)}
+                            >
+                              {isStudentSuspended ? "Reactivate" : "Suspend"}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* User Details Modal */}
@@ -678,13 +804,11 @@ export function AdminUsers() {
         open={Boolean(confirmRoleModal)}
         onOpenChange={(open) => !open && setConfirmRoleModal(null)}
         title={`Change role to ${confirmRoleModal ? ROLE_LABELS[confirmRoleModal.targetRole] : ""}?`}
-        description={`Are you sure you want to change ${confirmRoleModal?.user.full_name}'s role from ${
-          confirmRoleModal ? ROLE_LABELS[confirmRoleModal.user.role] : ""
-        } to ${confirmRoleModal ? ROLE_LABELS[confirmRoleModal.targetRole] : ""}? ${
-          confirmRoleModal?.targetRole === "admin"
+        description={`Are you sure you want to change ${confirmRoleModal?.user.full_name}'s role from ${confirmRoleModal ? ROLE_LABELS[confirmRoleModal.user.role] : ""
+          } to ${confirmRoleModal ? ROLE_LABELS[confirmRoleModal.targetRole] : ""}? ${confirmRoleModal?.targetRole === "admin"
             ? "WARNING: This will grant full platform administrative privileges to this user."
             : ""
-        }`}
+          }`}
         confirmLabel="Confirm Role Change"
         destructive={confirmRoleModal?.targetRole !== "admin"}
         onConfirm={() => {
