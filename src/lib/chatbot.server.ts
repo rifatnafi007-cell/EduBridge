@@ -409,6 +409,7 @@ Guidelines for Responses:
   * NEVER include domain names (like localhost, edubridge.com, or https://...pages.dev) in links or text.
 - Keep your answers concise, structured (bullet points), polite, and educational.
 - Do not make up fake tutors not present in the database.
+- Branding Rule: NEVER write "powered by Google Gemini" or mention Google Gemini in your answers, as this is already displayed in the UI header ribbon.
 - At the very end of your response, on a new line, always provide 3 relevant follow-up questions formatted exactly as:
 SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
 
@@ -569,6 +570,13 @@ SUGGESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
     // Clean outer or stray trailing parentheses: ([Label](url)) -> [Label](url)
     reply = reply.replace(/\(\s*(\[[^\]]+\]\([^)]+\))\s*\)/g, "$1");
     reply = reply.replace(/(\[[^\]]+\]\([^)]+\))\s*\)+/g, "$1");
+
+    // Strip redundant "powered by Google Gemini" / "powered by Gemini" from response text
+    reply = reply.replace(/,?\s*powered by Google Gemini\.?/gi, "");
+    reply = reply.replace(/,?\s*powered by Gemini\.?/gi, "");
+    reply = reply.replace(/\(powered by Google Gemini\)/gi, "");
+    reply = reply.replace(/\(powered by Gemini\)/gi, "");
+    reply = reply.trim();
 
     if (suggestions.length === 0) {
       suggestions = DEFAULT_SUGGESTIONS;

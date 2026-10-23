@@ -31,7 +31,7 @@ const INITIAL_SUGGESTIONS = [
 const INITIAL_MESSAGE: ChatMessage = {
   id: 0,
   role: "assistant",
-  text: "Hello! 👋 I'm your **EduBridge AI Assistant**, powered by Google Gemini.\n\nI can help you find verified tutors, compare subjects and rates, or explain how booking and offers work.\n\nWhat are you looking for today?",
+  text: "Hello! 👋 I'm your **EduBridge AI Assistant**.\n\nI can help you find verified tutors, compare subjects and rates, or explain how booking and offers work.\n\nWhat are you looking for today?",
   suggestions: INITIAL_SUGGESTIONS,
 };
 
